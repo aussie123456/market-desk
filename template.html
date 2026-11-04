@@ -1,0 +1,978 @@
+<title>IREN Markets Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a terminal-style desk. One sticky header, then sections stacked; each section is a 12-col grid that collapses to one column under 900px. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --surface-2:#eef1f4; --ink:#121417; --ink-2:#4a545e; --muted:#7b8591; --hair:#e1e6eb; --axis:#c4ccd4;
+  --accent:#2a78d6; --accent-soft:rgba(42,120,214,.10);
+  --s-iren:#2a78d6; --s-nbis:#eb6834; --s-crwv:#1baf7a; --s-orcl:#eda100; --s-nvda:#e87ba4; --s-other:#9aa3ad;
+  --up:#006300; --down:#b42318; --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --tag:#eef1f4;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --radius:6px; --shadow:0 1px 2px rgba(18,20,23,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1215; --surface:#171b20; --surface-2:#1e242a; --ink:#f1f3f5; --ink-2:#b6bec7; --muted:#8a949f; --hair:#262d34; --axis:#3a434c;
+    --accent:#3987e5; --accent-soft:rgba(57,135,229,.16);
+    --s-iren:#3987e5; --s-nbis:#d95926; --s-crwv:#199e70; --s-orcl:#c98500; --s-nvda:#d55181; --s-other:#6f7a85;
+    --up:#2fb52f; --down:#f0716f; --tag:#232a31; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1215; --surface:#171b20; --surface-2:#1e242a; --ink:#f1f3f5; --ink-2:#b6bec7; --muted:#8a949f; --hair:#262d34; --axis:#3a434c;
+  --accent:#3987e5; --accent-soft:rgba(57,135,229,.16);
+  --s-iren:#3987e5; --s-nbis:#d95926; --s-crwv:#199e70; --s-orcl:#c98500; --s-nvda:#d55181; --s-other:#6f7a85;
+  --up:#2fb52f; --down:#f0716f; --tag:#232a31; --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45}
+a{color:inherit;text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1480px;margin:0 auto;padding-inline:20px;padding-block:0 48px}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);border-bottom:1px solid var(--hair);padding-block:10px 8px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline}
+.topbar h1{font-size:18px;font-weight:600;margin:0;letter-spacing:-.01em}
+.topbar .meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.topbar nav{margin-left:auto;display:flex;gap:14px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+.refresh-btn{font-family:var(--font);font-size:12px;font-weight:500;padding:3px 10px;border:1px solid var(--accent);color:var(--accent);border-radius:999px;background:var(--accent-soft)}
+.refresh-btn:hover{text-decoration:none;background:var(--accent);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+.chip{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:999px;background:var(--tag);color:var(--ink-2);display:inline-flex;gap:5px;align-items:center}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--good);display:inline-block}
+.chip.err i{background:var(--crit)} .chip.stale i{background:var(--warn)}
+section{margin-top:28px}
+.sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.sec-h h2{font-size:15px;font-weight:600;margin:0;letter-spacing:.01em}
+.sec-h .sub{font-size:12.5px;color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);min-width:0}
+.card h3{font-size:13px;font-weight:600;margin:0 0 2px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h3 .asof{font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:400;white-space:nowrap}
+.card .note{font-size:11.5px;color:var(--muted);margin-top:8px}
+.col-12{grid-column:span 12}.col-8{grid-column:span 8}.col-7{grid-column:span 7}.col-6{grid-column:span 6}.col-5{grid-column:span 5}.col-4{grid-column:span 4}.col-3{grid-column:span 3}
+@media (max-width:1100px){.col-8,.col-7,.col-6,.col-5,.col-4{grid-column:span 12}.col-3{grid-column:span 6}}
+@media (max-width:600px){.col-3{grid-column:span 12}.wrap{padding-inline:16px}}
+/* hero + tiles */
+.hero{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end}
+.hero .px{font-size:52px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.hero .px small{font-size:18px;color:var(--muted);font-weight:500;margin-left:4px}
+.hero .chg{font-size:16px;font-weight:600}
+.hero .sub{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+.range{flex:1 1 220px;min-width:200px}
+.range .bar{position:relative;height:6px;border-radius:3px;background:var(--surface-2);margin:10px 0 4px}
+.range .bar i{position:absolute;top:-3px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);transform:translateX(-50%)}
+.range .lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.tile{padding:10px 12px;border:1px solid var(--hair);border-radius:var(--radius);background:var(--surface);min-width:0}
+.tile .l{font-size:11.5px;color:var(--muted);line-height:1.2}
+.tile .v{font-size:20px;font-weight:600;margin-top:4px;letter-spacing:-.01em}
+.tile .d{font-size:11px;color:var(--ink-2);margin-top:2px}
+.tile .d.up{color:var(--up)} .tile .d.down{color:var(--down)}
+.up{color:var(--up)} .down{color:var(--down)}
+.meter{height:8px;border-radius:4px;background:var(--surface-2);position:relative;overflow:hidden;margin-top:6px}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:4px}
+/* peer cards */
+.peer{display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--hair)}
+.peer:first-of-type{border-top:0;padding-top:4px}
+.peer[role="button"]{cursor:pointer;margin-inline:-8px;padding-inline:8px;border-radius:4px}
+.peer[role="button"]:hover{background:var(--surface-2)}
+.peer.sel{background:var(--accent-soft)}
+.peer.sel .tk{color:var(--accent)}
+.peer .tk{font-weight:600;display:flex;align-items:center;gap:7px}
+.peer .tk b{width:9px;height:9px;border-radius:2px;display:inline-block}
+.peer .nm{font-size:11px;color:var(--muted);font-weight:400}
+.peer .px{text-align:right;font-variant-numeric:tabular-nums}
+.peer .px .c{font-size:11.5px}
+.peer .kv{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.peer .kv b{color:var(--ink);font-weight:500}
+.peer svg{display:block}
+/* charts */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--hair);border-radius:4px;padding:6px 8px;font-size:11.5px;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap;display:none;z-index:3;font-variant-numeric:tabular-nums}
+.chart .tip .t{font-family:var(--mono);color:var(--muted);font-size:10.5px;margin-bottom:2px}
+.chart .tip .r{display:flex;gap:8px;align-items:center}
+.chart .tip .r i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.legend i.sq{width:9px;height:9px;border-radius:2px}
+.gridline{stroke:var(--hair);stroke-width:1}
+.axis-t{fill:var(--muted);font-size:10.5px;font-family:var(--mono)}
+.endlbl{fill:var(--ink);font-size:11px;font-weight:600}
+.seg-lbl{font-size:10.5px;fill:var(--ink)}
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--hair);white-space:nowrap}
+.tbl td{padding:7px 8px;border-bottom:1px solid var(--hair);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl td.src a{color:var(--muted);font-family:var(--mono);font-size:10.5px}
+.tbl .sw{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--tag);color:var(--ink-2);white-space:nowrap}
+.pill.filed{background:rgba(42,120,214,.12);color:var(--accent)} .pill.announced{background:rgba(12,163,12,.12);color:var(--up)} .pill.reported{background:rgba(250,178,25,.18);color:#8a5a00} .pill.rumoured{background:rgba(208,59,59,.12);color:var(--down)}
+:root[data-theme="dark"] .pill.reported{color:#f5c04a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.reported{color:#f5c04a}}
+.rating-bar{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px;margin:8px 0 6px}
+.rating-bar i{display:block;height:100%}
+.kv-list{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px}
+.kv-list dt{color:var(--muted)} .kv-list dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
+.news{list-style:none;margin:0;padding:0}
+.news li{padding:8px 0;border-top:1px solid var(--hair);display:grid;grid-template-columns:1fr auto;gap:2px 12px}
+.news li:first-child{border-top:0;padding-top:2px}
+.news .h{font-size:13px;line-height:1.35}
+.news .m{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.news .ago{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button{font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--hair);background:var(--surface);color:var(--ink-2);border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.empty{font-size:12.5px;color:var(--muted);padding:12px 0}
+.defs{font-size:12.5px;color:var(--ink-2);columns:2;column-gap:28px;max-width:1100px}
+.defs p{margin:0 0 8px;break-inside:avoid}
+@media (max-width:800px){.defs{columns:1}}
+.foot{margin-top:40px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--hair);padding-top:12px}
+@media (prefers-reduced-motion:no-preference){.tile,.card{transition:border-color .15s}}
+</style>
+
+<div class="wrap">
+<header class="topbar">
+  <h1>IREN Markets Desk</h1>
+  <div class="meta"><span id="m-updated">Updated: pending</span><span id="m-market"></span><a class="refresh-btn" href="https://claude.ai/code/routines/trig_01PiqKrCQhp7jhTPLKRpfA2H" target="_blank" rel="noopener" title="Opens the refresh job; press Run. New data appears here in 3 to 5 minutes.">&#8635; Refresh data</a></div>
+  <nav><a href="#health">Health</a><a href="#iren">IREN</a><a href="#brokers">Brokers</a><a href="#peers">Peers</a><a href="#capital">Capital</a><a href="#projects">Projects</a><a href="#macro">Macro</a><a href="#news">News</a><a href="#method">Definitions</a></nav>
+  <div class="chips" id="status-chips"></div>
+</header>
+
+<section id="health">
+  <div class="grid">
+    <div class="card col-8" id="health-card">
+      <div class="tabs" id="h-tabs" role="tablist" style="margin-bottom:12px"></div>
+      <div class="eyebrow" id="h-eyebrow">IREN Limited · Nasdaq: IREN · USD</div>
+      <div class="hero" style="margin-top:6px">
+        <div>
+          <div class="px"><span id="h-px">–</span><small>USD</small></div>
+          <div class="chg" id="h-chg">–</div>
+          <div class="sub" id="h-time"></div>
+        </div>
+        <div class="range">
+          <div class="eyebrow">52-week range</div>
+          <div class="bar"><i id="h-range-dot" style="left:50%"></i></div>
+          <div class="lbl"><span id="h-lo">–</span><span id="h-hi">–</span></div>
+        </div>
+        <div class="range">
+          <div class="eyebrow">12-month return</div>
+          <div class="tile" style="border:0;padding:4px 0 0"><div class="v" id="h-12m">–</div><div class="d" id="h-ytd">–</div></div>
+        </div>
+      </div>
+      <div class="tiles" id="h-tiles"></div>
+      <div class="note" id="h-note"></div>
+    </div>
+    <div class="card col-4">
+      <h3>Peer snapshot <span class="asof" id="p-asof"></span></h3>
+      <div id="peer-list"></div>
+      <div class="note">Click a company to open its snapshot in the main card. EV/EBITDA is trailing, as computed by Yahoo Finance from reported EBITDA. Sparklines are 12 months of daily closes.</div>
+    </div>
+  </div>
+</section>
+
+<section id="iren">
+  <div class="sec-h"><h2>IREN price and multiples</h2><span class="sub">12-month daily closes; multiples rebuilt monthly from price, share count and reported balance sheet</span></div>
+  <div class="grid">
+    <div class="card col-8">
+      <h3>Share price, last 12 months <span class="asof" id="c-px-asof"></span></h3>
+      <div class="chart" id="c-px"></div>
+    </div>
+    <div class="card col-4">
+      <h3>EV / adjusted EBITDA (LTM) <span class="asof">24 months, month-end</span></h3>
+      <div class="chart" id="c-evebitda"></div>
+      <h3 style="margin-top:16px">EV / operating MW <span class="asof">USD m per MW</span></h3>
+      <div class="chart" id="c-evmw"></div>
+      <div class="note" id="c-mult-note"></div>
+    </div>
+  </div>
+</section>
+
+<section id="brokers">
+  <div class="sec-h"><h2>Broker ratings</h2><span class="sub">Public aggregators only; counts differ by source window</span></div>
+  <div class="grid">
+    <div class="card col-4">
+      <h3>Consensus <span class="asof" id="b-asof"></span></h3>
+      <div id="b-consensus"></div>
+    </div>
+    <div class="card col-8">
+      <h3>Recent rating and target changes</h3>
+      <div class="scroll" id="b-changes"></div>
+    </div>
+  </div>
+</section>
+
+<section id="peers">
+  <div class="sec-h"><h2>Peers</h2><span class="sub">Nebius, CoreWeave, Oracle, NVIDIA</span></div>
+  <div class="grid">
+    <div class="card col-7">
+      <h3 id="c-rel-title">Relative performance, indexed to 100 twelve months ago</h3>
+      <div class="tabs" id="c-rel-tabs" role="tablist" style="margin:6px 0 10px">
+        <button role="tab" data-m="price" aria-selected="true">Price, indexed</button>
+        <button role="tab" data-m="ee" aria-selected="false">EV / EBITDA (trailing)</button>
+        <button role="tab" data-m="er" aria-selected="false">EV / revenue (trailing)</button>
+      </div>
+      <div class="chart" id="c-rel"></div>
+      <div class="legend" id="c-rel-legend"></div>
+      <div class="note" id="c-rel-note"></div>
+    </div>
+    <div class="card col-5">
+      <h3>Comparison <span class="asof">live where marked; otherwise latest filing</span></h3>
+      <div class="scroll" id="peer-table"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Operating metrics</h3>
+      <div class="scroll" id="peer-ops"></div>
+    </div>
+  </div>
+</section>
+
+<section id="capital">
+  <div class="sec-h"><h2>Capital markets</h2><span class="sub">Cap stack, calendar-2026 raises, last 24 hours, pipeline</span></div>
+  <div class="grid">
+    <div class="card col-7">
+      <h3>IREN capital stack <span class="asof" id="cs-asof"></span></h3>
+      <div class="chart" id="cs-bar"></div>
+      <div class="scroll" id="cs-table"></div>
+    </div>
+    <div class="card col-5">
+      <h3>IREN raises, calendar 2026 to date <span class="asof">USD m, gross</span></h3>
+      <div class="chart" id="r-iren-bar"></div>
+      <div class="scroll" id="r-iren-table"></div>
+      <div class="note" id="r-iren-note"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Look-through debt by borrower <span class="asof" id="lt-asof"></span></h3>
+      <div class="tiles" id="lt-tiles" style="margin-top:8px"></div>
+      <div class="chart" id="lt-bar" style="margin-top:14px"></div>
+      <div class="legend" id="lt-legend"></div>
+      <div class="scroll" id="lt-table" style="margin-top:10px"></div>
+      <div class="note" id="lt-note"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Peer raises, calendar 2026 to date, by instrument <span class="asof">USD m, gross, EUR converted at issue</span></h3>
+      <div class="chart" id="r-peer-bar"></div>
+      <div class="legend" id="r-peer-legend"></div>
+      <div class="tabs" id="r-peer-tabs" role="tablist"></div>
+      <div class="scroll" id="r-peer-table"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Last 24 hours <span class="asof" id="r24-asof"></span></h3>
+      <div id="r-24h"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Pipeline and projected raises</h3>
+      <div class="scroll" id="r-pipe"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Sector tape, largest 2026 AI-infrastructure financings</h3>
+      <div class="scroll" id="r-sector"></div>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="sec-h"><h2>Projects and delivery timeline</h2><span class="sub">Company-stated milestones only; targets are quarter or year precision as announced</span></div>
+  <div class="grid">
+    <div class="card col-12">
+      <h3>Timeline <span class="asof" id="pj-asof"></span></h3>
+      <div class="chart" id="pj-gantt"></div>
+      <div class="legend" id="pj-legend"></div>
+      <div class="note" id="pj-note"></div>
+    </div>
+    <div class="card col-12">
+      <h3>Milestones and targets</h3>
+      <div class="scroll" id="pj-table"></div>
+    </div>
+  </div>
+</section>
+
+<section id="macro">
+  <div class="sec-h"><h2>Macro</h2><span class="sub">Bitcoin, volatility, rates and credit</span></div>
+  <div class="grid">
+    <div class="card col-6">
+      <h3>Bitcoin, USD <span class="asof" id="c-btc-asof"></span></h3>
+      <div class="chart" id="c-btc"></div>
+    </div>
+    <div class="card col-6">
+      <h3>VIX <span class="asof" id="c-vix-asof"></span></h3>
+      <div class="chart" id="c-vix"></div>
+    </div>
+    <div class="card col-12">
+      <div class="tiles" id="macro-tiles" style="margin-top:0"></div>
+      <div class="note">Credit index: ICE BofA US High Yield option-adjusted spread from FRED is used as the public proxy for CDX HY, which has no free feed.</div>
+    </div>
+    <div class="card col-12">
+      <h3>Macro headlines</h3>
+      <ul class="news" id="news-macro"></ul>
+    </div>
+  </div>
+</section>
+
+<section id="news">
+  <div class="sec-h"><h2>Newsflow</h2><span class="sub">Google News, deduplicated, newest first</span></div>
+  <div class="grid">
+    <div class="card col-6">
+      <h3>IREN</h3>
+      <ul class="news" id="news-iren"></ul>
+    </div>
+    <div class="card col-6">
+      <h3>AI infrastructure financing and peers</h3>
+      <ul class="news" id="news-sector"></ul>
+    </div>
+    <div class="card col-12">
+      <h3>IREN SEC filings <span class="asof" id="sec-asof"></span></h3>
+      <div id="sec-list"></div>
+    </div>
+  </div>
+</section>
+
+<section id="method">
+  <div class="sec-h"><h2>Definitions and sources</h2></div>
+  <div class="card col-12">
+    <div class="defs">
+      <p><b>Market cap</b> is the last price times basic shares outstanding from Yahoo Finance when live, otherwise from the latest filing.</p>
+      <p><b>Enterprise value</b> is market cap plus total debt, with convertible notes at face value, less cash and equivalents. Bitcoin holdings are excluded from cash.</p>
+      <p><b>EV / adjusted EBITDA</b> uses the sum of the last four reported quarters of IREN adjusted EBITDA. IREN's fiscal year ends 30 June; quarters are labelled by calendar quarter end.</p>
+      <p><b>EV / MW</b> divides EV by operating (energised) MW as reported at the latest quarter end. Contracted capacity is shown separately.</p>
+      <p><b>Historical multiples</b> rebuild EV at each month-end from that month's closing price and the most recent reported share count, debt and cash at that date, so each point is comparable.</p>
+      <p><b>Broker consensus</b> comes from public aggregators. Their analyst counts differ because each uses a different look-back window.</p>
+      <p><b>Capital raises</b> are gross proceeds at pricing, including exercised greenshoes where closed. Strategic equity placements are included as equity. Project-level bonds for sites tenanted by a peer appear under the sector tape, not under the peer.</p>
+      <p><b>Pipeline</b> status labels: filed (shelf or ATM on file), announced (company-stated plan), reported (press report, not company-confirmed).</p>
+      <p><b>Look-through debt</b> lists every borrowing by the entity that owes it. HoldCo debt is recourse to IREN Limited. SPV debt sits in a subsidiary: non-recourse where the parent gives no payment guarantee, guaranteed where it does. Reported debt is the consolidated balance-sheet figure, which already includes drawn SPV debt. Committed undrawn amounts are facility headroom not yet borrowed; fully drawn look-through adds them to reported debt. Facilities whose terms are not public are listed without a figure.</p>
+      <p><b>Project timeline</b> shows only milestones IREN has stated publicly. Filled markers are completed events on their announced date; hollow markers are targets, placed at the end of the stated quarter or year. Bars run from the first public milestone to the latest target. Sites in the pipeline without a stated date appear in the table only.</p>
+      <p><b>Refresh</b> is manual. The Refresh data button opens the refresh job; pressing Run there re-pulls market data, FRED series, news feeds and SEC filings, scans for new capital raises, and republishes this page within a few minutes. Cap stack, raises, pipeline and capacity history are curated from filings and updated by that job when it finds a new announcement.</p>
+    </div>
+  </div>
+</section>
+
+<div class="foot">Informational only. Public sources: Yahoo Finance, FRED, SEC EDGAR, Google News, company filings and press releases. Figures are as reported by those sources and may lag.</div>
+</div>
+
+<!-- DATA BLOCKS. Blocks with data-url are re-fetched by the refresh script; d-curated is maintained by hand or by the refresh agent. -->
+<script type="application/json" id="d-meta">{"generated_at":null,"status":{}}</script>
+<script type="application/json" id="d-curated">null</script>
+<script type="application/json" id="d-chart-IREN" data-url="https://query1.finance.yahoo.com/v8/finance/chart/IREN?range=2y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-NBIS" data-url="https://query1.finance.yahoo.com/v8/finance/chart/NBIS?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-CRWV" data-url="https://query1.finance.yahoo.com/v8/finance/chart/CRWV?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-ORCL" data-url="https://query1.finance.yahoo.com/v8/finance/chart/ORCL?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-NVDA" data-url="https://query1.finance.yahoo.com/v8/finance/chart/NVDA?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-BTC" data-url="https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-VIX" data-url="https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-chart-TNX" data-url="https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1y&amp;interval=1d" data-kind="json">null</script>
+<script type="application/json" id="d-qs-IREN" data-url="https://query2.finance.yahoo.com/v10/finance/quoteSummary/IREN?modules=price,financialData,defaultKeyStatistics,recommendationTrend,upgradeDowngradeHistory,summaryDetail&amp;crumb={crumb}" data-kind="json" data-auth="yahoo">null</script>
+<script type="application/json" id="d-qs-NBIS" data-url="https://query2.finance.yahoo.com/v10/finance/quoteSummary/NBIS?modules=price,financialData,defaultKeyStatistics,summaryDetail&amp;crumb={crumb}" data-kind="json" data-auth="yahoo">null</script>
+<script type="application/json" id="d-qs-CRWV" data-url="https://query2.finance.yahoo.com/v10/finance/quoteSummary/CRWV?modules=price,financialData,defaultKeyStatistics,summaryDetail&amp;crumb={crumb}" data-kind="json" data-auth="yahoo">null</script>
+<script type="application/json" id="d-qs-ORCL" data-url="https://query2.finance.yahoo.com/v10/finance/quoteSummary/ORCL?modules=price,financialData,defaultKeyStatistics,summaryDetail&amp;crumb={crumb}" data-kind="json" data-auth="yahoo">null</script>
+<script type="application/json" id="d-qs-NVDA" data-url="https://query2.finance.yahoo.com/v10/finance/quoteSummary/NVDA?modules=price,financialData,defaultKeyStatistics,summaryDetail&amp;crumb={crumb}" data-kind="json" data-auth="yahoo">null</script>
+<script type="application/json" id="d-fred-DFF" data-url="https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFF&amp;cosd=2025-09-01" data-kind="text">null</script>
+<script type="application/json" id="d-fred-HYOAS" data-url="https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2&amp;cosd=2025-09-01" data-kind="text">null</script>
+<script type="application/json" id="d-news-IREN" data-url="https://news.google.com/rss/search?q=%22IREN%22+(bitcoin+OR+%22AI+cloud%22+OR+data+center+OR+Nasdaq+OR+notes+OR+offering)&amp;hl=en-US&amp;gl=US&amp;ceid=US:en" data-kind="text">null</script>
+<script type="application/json" id="d-news-SECTOR" data-url="https://news.google.com/rss/search?q=(CoreWeave+OR+Nebius+OR+%22Applied+Digital%22+OR+Cipher+OR+TeraWulf+OR+%22AI+data+center%22)+(financing+OR+notes+OR+debt+OR+raise+OR+offering)&amp;hl=en-US&amp;gl=US&amp;ceid=US:en" data-kind="text">null</script>
+<script type="application/json" id="d-news-MACRO" data-url="https://news.google.com/rss/search?q=(%22Federal+Reserve%22+OR+%22Treasury+yields%22+OR+%22credit+spreads%22+OR+bitcoin+OR+%22high+yield%22)+when:2d&amp;hl=en-US&amp;gl=US&amp;ceid=US:en" data-kind="text">null</script>
+<script type="application/json" id="d-sec" data-url="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001878848&amp;type=&amp;dateb=&amp;owner=include&amp;count=20&amp;output=atom" data-kind="text" data-ua="sec">null</script>
+
+<script>
+(function(){
+'use strict';
+// ---------- data access ----------
+const D = id => { const el=document.getElementById(id); if(!el) return null; try{ return JSON.parse(el.textContent); }catch(e){ return null; } };
+const META = D('d-meta')||{}, C = D('d-curated')||{};
+const CHART = {}; ['IREN','NBIS','CRWV','ORCL','NVDA','BTC','VIX','TNX'].forEach(k=>CHART[k]=parseChart(D('d-chart-'+k)));
+const QS = {}; ['IREN','NBIS','CRWV','ORCL','NVDA'].forEach(k=>QS[k]=parseQS(D('d-qs-'+k)));
+const SER = {IREN:'var(--s-iren)',NBIS:'var(--s-nbis)',CRWV:'var(--s-crwv)',ORCL:'var(--s-orcl)',NVDA:'var(--s-nvda)',OTHER:'var(--s-other)'};
+const NAMES = {IREN:'IREN',NBIS:'Nebius',CRWV:'CoreWeave',ORCL:'Oracle',NVDA:'NVIDIA'};
+const TYPE_COLORS = {'Convertible notes':'var(--s-iren)','Straight bonds':'var(--s-nbis)','Private credit / term loans':'var(--s-crwv)','Equity':'var(--s-orcl)','ATM equity':'var(--s-nvda)','Other':'var(--s-other)'};
+const TYPE_ORDER = Object.keys(TYPE_COLORS);
+
+function parseChart(j){
+  try{
+    const r=j.chart.result[0], ts=r.timestamp, q=r.indicators.quote[0];
+    const pts=[]; for(let i=0;i<ts.length;i++){ const c=q.close[i]; if(c==null) continue; pts.push({x:new Date(ts[i]*1000), y:c}); }
+    return {meta:r.meta, pts};
+  }catch(e){ return null; }
+}
+function parseQS(j){ try{ return j.quoteSummary.result[0]; }catch(e){ return null; } }
+const raw = (o,...path)=>{ let v=o; for(const p of path){ if(v==null) return null; v=v[p]; } if(v&&typeof v==='object'&&'raw' in v) return v.raw; return (typeof v==='number'||typeof v==='string')?v:null; };
+
+// ---------- formatting ----------
+const nf = (n,d=0)=> n==null||isNaN(n)?'–':Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const money = (n,{d}={})=>{ if(n==null||isNaN(n)) return '–'; const a=Math.abs(n); const s=n<0?'-':''; if(a>=1e12) return s+'$'+nf(a/1e12,2)+'tn'; if(a>=1e9) return s+'$'+nf(a/1e9,a>=1e11?0:(d==null?1:d))+'bn'; if(a>=1e6) return s+'$'+nf(a/1e6,0)+'m'; return s+'$'+nf(a,0); };
+const moneyM = m => m==null?'–':money(m*1e6); // input in USD millions
+const pct = (p,d=1,sign=true)=> p==null||isNaN(p)?'–':((sign&&p>0?'+':'')+nf(p,d)+'%');
+const mult = x => x==null||!isFinite(x)||x<=0?'n.m.':(x>=100?nf(x,0):nf(x,1))+'x';
+const dateS = d => d? new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '–';
+const dateShort = d => new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const monthLbl = d => new Date(d).toLocaleDateString('en-US',{month:'short',year:'2-digit'}).replace(' ',' ');
+const ago = d => { const s=(Date.now()-new Date(d))/1000; if(s<3600) return Math.max(1,Math.round(s/60))+'m ago'; if(s<86400) return Math.round(s/3600)+'h ago'; return Math.round(s/86400)+'d ago'; };
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id)=>document.getElementById(id);
+const cls = v => v>0?'up':(v<0?'down':'');
+
+// ---------- header ----------
+(function header(){
+  const gen = META.generated_at? new Date(META.generated_at):null;
+  el('m-updated').textContent = 'Updated: ' + (gen? gen.toLocaleString('en-AU',{timeZone:'Australia/Sydney',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZoneName:'short'}) : 'pending first refresh');
+  const mt = raw(QS.IREN,'price','regularMarketTime') || (CHART.IREN&&CHART.IREN.meta.regularMarketTime);
+  if(mt) el('m-market').textContent = 'Last trade '+new Date(mt*1000).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' ET';
+  const st = META.status||{}; const groups = {'Prices':['d-chart-IREN','d-chart-NBIS','d-chart-CRWV','d-chart-ORCL','d-chart-NVDA','d-chart-BTC','d-chart-VIX','d-chart-TNX'],'Fundamentals':['d-qs-IREN','d-qs-NBIS','d-qs-CRWV','d-qs-ORCL','d-qs-NVDA'],'FRED':['d-fred-DFF','d-fred-HYOAS'],'News':['d-news-IREN','d-news-SECTOR','d-news-MACRO'],'SEC':['d-sec']};
+  const chips = Object.entries(groups).map(([g,ids])=>{ const bad=ids.filter(i=>st[i]&&st[i]!=='ok'); const missing=ids.filter(i=>D(i)==null); const c = bad.length===ids.length||missing.length===ids.length?'err':(bad.length||missing.length?'stale':''); const t = c==='err'?'unavailable':(c==='stale'?(missing.length||bad.length)+' of '+ids.length+' stale':'live'); return '<span class="chip '+c+'"><i></i>'+g+': '+t+'</span>'; });
+  chips.push('<span class="chip"><i style="background:var(--accent)"></i>Curated: '+(C.as_of?dateS(C.as_of):'–')+'</span>');
+  el('status-chips').innerHTML = chips.join('');
+})();
+
+// ---------- IREN health ----------
+const I = C.iren||{};
+const irenPts = CHART.IREN? CHART.IREN.pts : [];
+const last = irenPts.length? irenPts[irenPts.length-1] : null;
+const px = raw(QS.IREN,'price','regularMarketPrice') ?? (CHART.IREN&&CHART.IREN.meta.regularMarketPrice) ?? (last&&last.y);
+const prevClose = raw(QS.IREN,'summaryDetail','previousClose') ?? (irenPts.length>1? irenPts[irenPts.length-2].y : null);
+const chg1d = (px!=null&&prevClose)? (px/prevClose-1)*100 : null;
+const sharesLive = raw(QS.IREN,'defaultKeyStatistics','sharesOutstanding');
+const shares = sharesLive || (I.shares_out_m? I.shares_out_m*1e6 : null);
+const mcapLive = raw(QS.IREN,'price','marketCap');
+const mcap = mcapLive || (px&&shares? px*shares : null);
+const debt = I.debt_m!=null? I.debt_m*1e6 : raw(QS.IREN,'financialData','totalDebt');
+const cash = I.cash_m!=null? I.cash_m*1e6 : raw(QS.IREN,'financialData','totalCash');
+const ev = (mcap!=null&&debt!=null&&cash!=null)? mcap+debt-cash : raw(QS.IREN,'defaultKeyStatistics','enterpriseValue');
+const ltmAdj = ltmEbitda(I.quarters, null);
+const btcPx = CHART.BTC&&CHART.BTC.pts.length? CHART.BTC.pts[CHART.BTC.pts.length-1].y : null;
+
+// Look-through debt: every borrowing by the entity that owes it. Categories drive the colours and the summary tiles.
+const LT_ORDER=['HoldCo recourse','SPV, parent-guaranteed','SPV, non-recourse','Equipment leases / other secured','SPV, terms not disclosed'];
+const LT_COLOR={'HoldCo recourse':SER.IREN,'SPV, parent-guaranteed':SER.NBIS,'SPV, non-recourse':SER.CRWV,'Equipment leases / other secured':SER.NVDA,'SPV, terms not disclosed':SER.OTHER};
+function ltCat(r){ return r.level==='HoldCo'? 'HoldCo recourse' : r.level==='Equipment'? 'Equipment leases / other secured' : r.guaranteed===true? 'SPV, parent-guaranteed' : r.guaranteed===false? 'SPV, non-recourse' : 'SPV, terms not disclosed'; }
+function lookThrough(){
+  const rows=(I.debt_entities||[]); if(!rows.length) return null;
+  const by={}; rows.forEach(r=>{ const c=ltCat(r); by[c]=by[c]||{drawn:0,undrawn:0}; by[c].drawn+=(r.drawn_m||0); by[c].undrawn+=(r.commitment_m!=null? Math.max(0,r.commitment_m-(r.drawn_m||0)) : 0); });
+  const drawn=rows.reduce((a,r)=>a+(r.drawn_m||0),0), undrawn=Object.values(by).reduce((a,b)=>a+b.undrawn,0);
+  return {rows, by, drawn, undrawn, unquantified: rows.filter(r=>r.commitment_m==null)};
+}
+function ltmEbitda(qs, asOf){ if(!qs||!qs.length) return null; const q = qs.filter(x=>x.adj_ebitda_m!=null && (!asOf || new Date(x.end)<=asOf)).slice(-4); if(q.length<4) return null; return q.reduce((a,b)=>a+b.adj_ebitda_m,0); }
+function latestQ(qs, asOf, field){ if(!qs) return null; const q = qs.filter(x=>x[field]!=null && (!asOf || new Date(x.end)<=asOf)); return q.length? q[q.length-1] : null; }
+
+// Snapshot card: IREN by default, any peer on click. Shared price/range/return block, company-specific tiles.
+const LONG = {IREN:'IREN Limited',NBIS:'Nebius Group N.V.',CRWV:'CoreWeave, Inc.',ORCL:'Oracle Corporation',NVDA:'NVIDIA Corporation'};
+function tickerFacts(k){
+  const q=QS[k], ch=CHART[k], pts=ch? ch.pts:[], lastP=pts.length? pts[pts.length-1]:null;
+  const price = raw(q,'price','regularMarketPrice') ?? (ch&&ch.meta.regularMarketPrice) ?? (lastP&&lastP.y);
+  const prev = raw(q,'summaryDetail','previousClose') ?? (pts.length>1? pts[pts.length-2].y : null);
+  const chg = (price!=null&&prev)? (price/prev-1)*100 : (raw(q,'price','regularMarketChangePercent')!=null? raw(q,'price','regularMarketChangePercent')*100 : null);
+  const t = raw(q,'price','regularMarketTime') || (ch&&ch.meta.regularMarketTime);
+  const lo = raw(q,'summaryDetail','fiftyTwoWeekLow') ?? (ch&&ch.meta.fiftyTwoWeekLow), hi = raw(q,'summaryDetail','fiftyTwoWeekHigh') ?? (ch&&ch.meta.fiftyTwoWeekHigh);
+  const yearAgo = new Date(Date.now()-365*864e5); const p12 = pts.find(p=>p.x>=yearAgo);
+  const y0 = new Date(new Date().getFullYear(),0,1); const pY = pts.filter(p=>p.x<y0).pop();
+  return {k, q, ch, pts, price, prev, chg, t, lo, hi, r12: p12? (price/p12.y-1)*100:null, rY: pY? (price/pY.y-1)*100:null,
+    mcap: raw(q,'price','marketCap'), ev: raw(q,'defaultKeyStatistics','enterpriseValue'), ee: raw(q,'defaultKeyStatistics','enterpriseToEbitda'), er: raw(q,'defaultKeyStatistics','enterpriseToRevenue'), fpe: raw(q,'defaultKeyStatistics','forwardPE'), rg: raw(q,'financialData','revenueGrowth'), gm: raw(q,'financialData','grossMargins'), em: raw(q,'financialData','ebitdaMargins'), debt: raw(q,'financialData','totalDebt'), cash: raw(q,'financialData','totalCash'), ebitda: raw(q,'financialData','ebitda'), rev: raw(q,'financialData','totalRevenue'), sh: raw(q,'defaultKeyStatistics','sharesOutstanding'), exch: ch&&ch.meta.fullExchangeName};
+}
+function renderHealth(k){
+  const f = tickerFacts(k); const isI = k==='IREN';
+  el('h-eyebrow').textContent = (LONG[k]||k)+' · '+(f.exch||'')+': '+k+' · USD';
+  el('h-px').textContent = f.price!=null? nf(f.price,2):'–';
+  const chEl = el('h-chg'); chEl.textContent = f.chg!=null? (pct(f.chg,2)+' today'+(f.prev? ' · '+(f.price-f.prev>=0?'+':'')+nf(f.price-f.prev,2):'')) : '–'; chEl.className='chg '+cls(f.chg);
+  el('h-time').textContent = f.t? 'Close / last '+new Date(f.t*1000).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' ET' : '';
+  if(f.lo&&f.hi&&f.price){ el('h-lo').textContent='$'+nf(f.lo,2); el('h-hi').textContent='$'+nf(f.hi,2); el('h-range-dot').style.left = Math.max(0,Math.min(100,(f.price-f.lo)/(f.hi-f.lo)*100))+'%'; }
+  el('h-12m').textContent = pct(f.r12,1); el('h-12m').className='v '+cls(f.r12);
+  el('h-ytd').textContent = 'YTD '+pct(f.rY,1); el('h-ytd').className='d '+cls(f.rY);
+  let tiles, note;
+  if(isI){
+    const lq = I.last_q||{}; const mwOp = I.mw_operating, mwCon = I.mw_contracted;
+    const liq = (cash||0) + ((I.btc_count||0)*(btcPx||0)) + (I.undrawn_facilities_m||0)*1e6;
+    const lt = lookThrough();
+    tiles = [
+      {l:'Market cap', v:money(mcap), d: sharesLive? nf(shares/1e6,0)+'m shares · live' : (shares? nf(shares/1e6,0)+'m shares · '+(I.shares_date||'filing') : '')},
+      {l:'Enterprise value', v:money(ev), d:'debt '+money(debt)+' · cash '+money(cash)},
+      {l:'Net debt', v: (debt!=null&&cash!=null)? money(debt-cash):'–', d: I.balance_date? 'as of '+dateS(I.balance_date):''},
+      {l:'Look-through debt, fully drawn', v: lt? moneyM(lt.drawn+lt.undrawn):'–', d: lt? 'reported '+moneyM(lt.drawn)+' + '+moneyM(lt.undrawn)+' committed undrawn'+(lt.unquantified.length? ' + '+lt.unquantified.length+' facility'+(lt.unquantified.length>1?'ies':'')+' not quantified':'') : 'see Capital'},
+      {l:'EV / adj. EBITDA (LTM)', v: mult(ev&&ltmAdj? ev/(ltmAdj*1e6):null), d: ltmAdj? 'LTM adj. EBITDA '+moneyM(ltmAdj) : 'needs 4 quarters'},
+      {l:'EV / operating MW', v: ev&&mwOp? money(ev/mwOp)+'/MW' : '–', d: mwOp? nf(mwOp)+' MW operating':''},
+      {l:'Liquidity', v: liq? money(liq):'–', d: (I.btc_count? nf(I.btc_count)+' BTC at spot · ':'')+'cash'+(I.undrawn_facilities_m?' + undrawn':'')},
+      {l:'Operating vs contracted MW', v: mwOp? nf(mwOp)+' / '+nf(mwCon)+' MW':'–', meter: mwOp&&mwCon? mwOp/mwCon:null, d: mwCon? nf(Math.round(mwOp/mwCon*100))+'% energised' : ''},
+      {l:'Last quarter revenue', v: moneyM(lq.revenue_m), d: lq.label||''},
+      {l:'Last quarter adj. EBITDA', v: moneyM(lq.adj_ebitda_m), d: (lq.adj_ebitda_m!=null&&lq.revenue_m)? nf(lq.adj_ebitda_m/lq.revenue_m*100,0)+'% margin' : ''},
+      {l:'Contracted revenue', v: I.backlog_m!=null? moneyM(I.backlog_m):'–', d: I.backlog_note||''},
+    ];
+    note = I.health_note||'';
+  } else {
+    const p = (C.peers||{})[k]||{};
+    tiles = [
+      {l:'Market cap', v:money(f.mcap), d: f.sh? nf(f.sh/1e6,0)+'m shares · live':''},
+      {l:'Enterprise value', v:money(f.ev), d:'debt '+money(f.debt)+' · cash '+money(f.cash)},
+      {l:'Net debt', v:(f.debt!=null&&f.cash!=null)? money(f.debt-f.cash):'–', d:'latest reported quarter'},
+      {l:'EV / EBITDA (trailing)', v:mult(f.ee), d: f.ebitda? 'LTM EBITDA '+money(f.ebitda):''},
+      {l:'EV / revenue (trailing)', v:mult(f.er), d: f.rev? 'LTM revenue '+money(f.rev):''},
+      {l:'Forward P/E', v: f.fpe&&f.fpe>0? nf(f.fpe,1)+'x':'n.m.', d: f.fpe&&f.fpe<=0? 'negative forward EPS':'next 12 months'},
+      {l:'Revenue growth (yoy)', v: f.rg!=null? pct(f.rg*100,0):'–', d:'latest quarter vs prior year'},
+      {l:'Gross margin', v: f.gm!=null? nf(f.gm*100,0)+'%':'–', d: f.em!=null? 'EBITDA margin '+nf(f.em*100,0)+'%':''},
+    ];
+    if(k==='NBIS'||k==='CRWV'){
+      tiles.push({l:'Active vs contracted power', v: p.mw_active? nf(p.mw_active)+' / '+nf(p.mw_contracted)+' MW' : (p.mw_contracted? nf(p.mw_contracted/1000,1)+' GW contracted':'–'), meter: p.mw_active&&p.mw_contracted? p.mw_active/p.mw_contracted:null, d: p.mw_active&&p.mw_contracted? nf(Math.round(p.mw_active/p.mw_contracted*100))+'% energised' : (p.note||'')});
+      tiles.push({l:'EV / active MW', v: f.ev&&p.mw_active? money(f.ev/p.mw_active)+'/MW':'n/d', d: p.mw_active? nf(p.mw_active)+' MW active':'active MW not disclosed'});
+      tiles.push({l:'Revenue backlog', v: p.backlog_b? '$'+nf(p.backlog_b,0)+'bn':'–', d:'committed contracts, latest quarter'});
+    } else if(k==='ORCL'){
+      tiles.push({l:'Remaining performance obligations', v: p.rpo_b? '$'+nf(p.rpo_b,0)+'bn':'–', d:'Q1 FY27, ~13% recognised in 12 months'});
+      tiles.push({l:'OCI revenue, last quarter', v:'$7.4bn', d:'+121% yoy'});
+    } else if(k==='NVDA'){
+      tiles.push({l:'Data Center revenue', v: p.dc_rev_b? '$'+nf(p.dc_rev_b,1)+'bn':'–', d: p.quarter||''});
+      tiles.push({l:'Total revenue, last quarter', v: p.rev_b? '$'+nf(p.rev_b,1)+'bn':'–', d: p.gm_pct? 'gross margin '+nf(p.gm_pct,1)+'%':''});
+    }
+    const ops = (C.peer_ops||[]).filter(o=>o.ticker===k).map(o=>o.metric+': '+o.value+(o.as_of?' ('+o.as_of+')':''));
+    note = 'Yahoo Finance fundamentals, re-pulled on each refresh; operating metrics curated from the latest results. '+ops.join(' · ');
+  }
+  el('h-tiles').innerHTML = tiles.map(t=>'<div class="tile"><div class="l">'+esc(t.l)+'</div><div class="v">'+esc(t.v)+'</div>'+(t.meter!=null?'<div class="meter"><i style="width:'+Math.min(100,t.meter*100)+'%"></i></div>':'')+'<div class="d">'+esc(t.d||'')+'</div></div>').join('');
+  el('h-note').textContent = note;
+  el('h-tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelectorAll('#peer-list .peer').forEach(r=>r.classList.toggle('sel', r.dataset.k===k));
+}
+(function healthInit(){
+  const tabs = el('h-tabs');
+  tabs.innerHTML = ['IREN','NBIS','CRWV','NVDA','ORCL'].map(k=>'<button role="tab" data-k="'+k+'" aria-selected="'+(k==='IREN')+'"><i class="sw" style="background:'+SER[k]+';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle"></i>'+k+'</button>').join('');
+  tabs.addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) renderHealth(b.dataset.k); });
+  renderHealth('IREN');
+})();
+
+// ---------- peer snapshot ----------
+(function peers(){
+  const P = C.peers||{}; const rows=[];
+  for(const k of ['NBIS','CRWV','NVDA','ORCL']){
+    const q=QS[k], ch=CHART[k], p=P[k]||{};
+    const price = raw(q,'price','regularMarketPrice') ?? (ch&&ch.meta.regularMarketPrice);
+    const chp = raw(q,'price','regularMarketChangePercent'); const c1d = chp!=null? chp*100 : null;
+    const mc = raw(q,'price','marketCap'); const evv = raw(q,'defaultKeyStatistics','enterpriseValue'); const ee = raw(q,'defaultKeyStatistics','enterpriseToEbitda'); const fpe = raw(q,'defaultKeyStatistics','forwardPE'); const rg = raw(q,'financialData','revenueGrowth');
+    const pts = ch? ch.pts : []; const r12 = pts.length? (price/pts[0].y-1)*100 : null;
+    const kv = [['Mkt cap',money(mc)],['EV',money(evv)],['EV/EBITDA',mult(ee)],['12m',pct(r12,0)]];
+    if(k==='NVDA'){ kv.push(['Fwd P/E', fpe? nf(fpe,1)+'x':'–']); kv.push(['Rev growth', rg!=null? pct(rg*100,0):'–']); }
+    else if(k==='ORCL'){ kv.push(['Fwd P/E', fpe? nf(fpe,1)+'x':'–']); kv.push(['RPO', p.rpo_b? '$'+nf(p.rpo_b,0)+'bn':'–']); }
+    else { kv.push(p.mw_active? ['EV/active MW', evv? money(evv/p.mw_active):'–'] : ['Contracted', p.mw_contracted? nf(p.mw_contracted/1000,1)+' GW':'–']); kv.push(['Backlog', p.backlog_b? '$'+nf(p.backlog_b,0)+'bn':'–']); }
+    rows.push('<div class="peer" role="button" tabindex="0" data-k="'+k+'" title="Open '+NAMES[k]+' snapshot"><div class="tk"><b style="background:'+SER[k]+'"></b>'+k+' <span class="nm">'+NAMES[k]+'</span></div>'+sparkline(pts,SER[k],110,28)+'<div class="px">$'+nf(price,2)+'<div class="c '+cls(c1d)+'">'+pct(c1d,2)+'</div></div><div class="kv">'+kv.map(x=>'<span>'+x[0]+' <b>'+esc(x[1])+'</b></span>').join('')+'</div></div>');
+  }
+  const list = el('peer-list'); list.innerHTML = rows.join('');
+  const open = r=>{ renderHealth(r.dataset.k); if(window.innerWidth<1100) el('health-card').scrollIntoView({behavior:'smooth',block:'start'}); };
+  list.addEventListener('click',e=>{ const r=e.target.closest('.peer'); if(r) open(r); });
+  list.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ const r=e.target.closest('.peer'); if(r){ e.preventDefault(); open(r); } } });
+  const t = raw(QS.NVDA,'price','regularMarketTime'); if(t) el('p-asof').textContent = new Date(t*1000).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' ET';
+})();
+
+// ---------- charts ----------
+function sparkline(pts,color,w,h){
+  if(!pts||pts.length<2) return '<svg width="'+w+'" height="'+h+'"></svg>';
+  const ys=pts.map(p=>p.y), lo=Math.min(...ys), hi=Math.max(...ys), n=pts.length;
+  const X=i=>(i/(n-1))*(w-4)+2, Y=v=>h-2-((v-lo)/((hi-lo)||1))*(h-4);
+  const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.y).toFixed(1)).join(' ');
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linejoin="round"/><circle cx="'+X(n-1).toFixed(1)+'" cy="'+Y(ys[n-1]).toFixed(1)+'" r="2.5" fill="'+color+'"/></svg>';
+}
+function niceTicks(lo,hi,n){ if(!(hi>lo)) return [lo]; const span=hi-lo, step0=span/n, mag=Math.pow(10,Math.floor(Math.log10(step0))), r=step0/mag; const step=(r>=5?10:r>=2?5:r>=1?2:1)*mag; const t=[]; for(let v=Math.ceil(lo/step)*step; v<=hi+1e-9; v+=step) t.push(+v.toFixed(10)); return t; }
+// Generic multi-series line chart with hover tooltip. series: [{name,color,pts:[{x:Date,y}]}]
+function lineChart(container, series, opts={}){
+  const host = typeof container==='string'? el(container):container; if(!host) return;
+  series = series.filter(s=>s&&s.pts&&s.pts.length>1);
+  if(!series.length){ host.innerHTML='<div class="empty">'+(opts.empty||'No data yet. Populates on the next refresh.')+'</div>'; return; }
+  const W = Math.max(280, host.clientWidth||600), H = opts.height||260, m={t:14,r:opts.right||56,b:26,l:opts.left||48};
+  const allX = series.flatMap(s=>s.pts.map(p=>+p.x)), allY = series.flatMap(s=>s.pts.map(p=>p.y));
+  const x0=Math.min(...allX), x1=Math.max(...allX); let y0=Math.min(...allY), y1=Math.max(...allY);
+  if(opts.zero) y0=Math.min(0,y0); const pad=(y1-y0)*0.06||1; y0-=pad; y1+=pad;
+  const ticks=niceTicks(y0,y1,5); y0=Math.min(y0,ticks[0]); y1=Math.max(y1,ticks[ticks.length-1]);
+  const X=t=>m.l+(t-x0)/((x1-x0)||1)*(W-m.l-m.r), Y=v=>m.t+(1-(v-y0)/((y1-y0)||1))*(H-m.t-m.b);
+  const yf = opts.yfmt||(v=>nf(v,0));
+  let g='';
+  ticks.forEach(t=>{ g+='<line class="gridline" x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'"/><text class="axis-t" x="'+(m.l-6)+'" y="'+(Y(t)+3.5).toFixed(1)+'" text-anchor="end">'+esc(yf(t))+'</text>'; });
+  // x ticks: month starts, thinned
+  const months=[]; const d=new Date(x0); d.setDate(1); d.setHours(0,0,0,0); d.setMonth(d.getMonth()+1); while(+d<x1){ months.push(new Date(d)); d.setMonth(d.getMonth()+1); }
+  const every = months.length>14? 3 : (months.length>8?2:1);
+  months.forEach((mo,i)=>{ if(i%every) return; g+='<text class="axis-t" x="'+X(+mo).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+monthLbl(mo)+'</text>'; });
+  let paths='';
+  series.forEach((s,si)=>{
+    const d=s.pts.map((p,i)=>(i?'L':'M')+X(+p.x).toFixed(1)+' '+Y(p.y).toFixed(1)).join(' ');
+    if(opts.area && series.length===1){ const lp=s.pts[s.pts.length-1], fp=s.pts[0]; paths+='<path d="'+d+' L'+X(+lp.x).toFixed(1)+' '+Y(y0).toFixed(1)+' L'+X(+fp.x).toFixed(1)+' '+Y(y0).toFixed(1)+' Z" fill="'+s.color+'" opacity="0.10"/>'; }
+    paths+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    const lp=s.pts[s.pts.length-1];
+    paths+='<circle cx="'+X(+lp.x).toFixed(1)+'" cy="'+Y(lp.y).toFixed(1)+'" r="4" fill="'+s.color+'" stroke="var(--surface)" stroke-width="2"/>';
+    if(opts.endLabels!==false && series.length<=5){ paths+='<text class="endlbl" x="'+(X(+lp.x)+8).toFixed(1)+'" y="'+(Y(lp.y)+4).toFixed(1)+'">'+esc(series.length>1? (opts.endName? s.name:yf(lp.y)) : yf(lp.y))+'</text>'; }
+  });
+  if(opts.refLine!=null && opts.refLine>y0 && opts.refLine<y1){ g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(opts.refLine).toFixed(1)+'" y2="'+Y(opts.refLine).toFixed(1)+'" stroke="var(--axis)" stroke-width="1"/>'; }
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(opts.label||'line chart')+'">'+g+paths+'<line class="xh" x1="0" x2="0" y1="'+m.t+'" y2="'+(H-m.b)+'" stroke="var(--axis)" stroke-width="1" style="display:none"/><rect class="hit" x="'+m.l+'" y="'+m.t+'" width="'+(W-m.l-m.r)+'" height="'+(H-m.t-m.b)+'" fill="transparent"/></svg><div class="tip"></div>';
+  // hover
+  const svg=host.querySelector('svg'), tip=host.querySelector('.tip'), xh=host.querySelector('.xh'), hit=host.querySelector('.hit');
+  const move=e=>{ const r=svg.getBoundingClientRect(); const sx=(e.clientX-r.left)*(W/r.width); const t=x0+(sx-m.l)/(W-m.l-m.r)*(x1-x0);
+    const rows=series.map(s=>{ let best=s.pts[0]; for(const p of s.pts){ if(Math.abs(+p.x-t)<Math.abs(+best.x-t)) best=p; } return {s,p:best}; });
+    const ax=X(+rows[0].p.x); xh.setAttribute('x1',ax); xh.setAttribute('x2',ax); xh.style.display='';
+    tip.innerHTML='<div class="t">'+dateS(rows[0].p.x)+'</div>'+rows.map(r=>'<div class="r"><i style="background:'+r.s.color+'"></i>'+(series.length>1?esc(r.s.name)+' ':'')+'<b>'+esc(yf(r.p.y))+'</b></div>').join('');
+    tip.style.display='block'; const left=ax/W*r.width; tip.style.left=(left+12+tip.offsetWidth>r.width? left-tip.offsetWidth-12: left+12)+'px'; tip.style.top='8px'; };
+  hit.addEventListener('mousemove',move); hit.addEventListener('mouseleave',()=>{tip.style.display='none'; xh.style.display='none';});
+}
+// Horizontal bars: rows [{label,value,color,sub}]
+function hbars(container, rows, opts={}){
+  const host=el(container); if(!host) return; rows=rows.filter(r=>r.value!=null);
+  if(!rows.length){ host.innerHTML='<div class="empty">'+(opts.empty||'Nothing recorded.')+'</div>'; return; }
+  const W=Math.max(280,host.clientWidth||500), rh=26, lw=opts.labelW||150, vw=70, H=rows.length*rh+4, max=Math.max(...rows.map(r=>r.value));
+  let s='';
+  rows.forEach((r,i)=>{ const y=i*rh+2, bw=Math.max(2,(r.value/max)*(W-lw-vw-8));
+    s+='<text class="axis-t" x="'+(lw-8)+'" y="'+(y+16)+'" text-anchor="end" style="fill:var(--ink);font-family:var(--font);font-size:12px">'+esc(r.label)+'</text>';
+    s+='<rect x="'+lw+'" y="'+(y+4)+'" width="'+bw.toFixed(1)+'" height="16" rx="0" fill="'+r.color+'"/><rect x="'+(lw+bw-4).toFixed(1)+'" y="'+(y+4)+'" width="4" height="16" rx="3" fill="'+r.color+'"/>';
+    s+='<text class="axis-t" x="'+(lw+bw+8).toFixed(1)+'" y="'+(y+16)+'" style="fill:var(--ink)">'+esc((opts.fmt||moneyM)(r.value))+'</text>'; });
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+s+'</svg>';
+}
+// Stacked horizontal bars: rows [{label, segs:[{name,value,color}]}]
+function stacked(container, rows, opts={}){
+  const host=el(container); if(!host) return; rows=rows.filter(r=>r.segs.some(s=>s.value>0));
+  if(!rows.length){ host.innerHTML='<div class="empty">'+(opts.empty||'Nothing recorded.')+'</div>'; return; }
+  const W=Math.max(280,host.clientWidth||500), rh=30, lw=opts.labelW||110, vw=80, H=rows.length*rh+4, max=Math.max(...rows.map(r=>r.segs.reduce((a,b)=>a+(b.value||0),0)));
+  const scale=(W-lw-vw-8)/max; let s='';
+  rows.forEach((r,i)=>{ const y=i*rh+2; let x=lw; const tot=r.segs.reduce((a,b)=>a+(b.value||0),0);
+    s+='<text x="'+(lw-8)+'" y="'+(y+18)+'" text-anchor="end" style="fill:var(--ink);font-size:12px">'+esc(r.label)+'</text>';
+    r.segs.forEach((g,j)=>{ if(!g.value) return; const w=g.value*scale; s+='<rect x="'+(x+(j?1:0)).toFixed(1)+'" y="'+(y+6)+'" width="'+Math.max(0,w-(j?1:0)-1).toFixed(1)+'" height="18" fill="'+g.color+'"'+(g.hollow?' fill-opacity="0.25" stroke="'+g.color+'" stroke-width="1" stroke-dasharray="3 2"':'')+'><title>'+esc(g.name+': '+(opts.fmt||moneyM)(g.value))+'</title></rect>'; if(w>44){ s+='<text class="seg-lbl" x="'+(x+w/2).toFixed(1)+'" y="'+(y+19)+'" text-anchor="middle" style="fill:#fff">'+esc((opts.fmt||moneyM)(g.value))+'</text>'; } x+=w; });
+    s+='<text class="axis-t" x="'+(x+8).toFixed(1)+'" y="'+(y+19)+'" style="fill:var(--ink)">'+esc((opts.fmt||moneyM)(tot))+'</text>'; });
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+s+'</svg>';
+}
+
+// ---------- IREN charts ----------
+function drawIren(){
+  const yearAgo=new Date(Date.now()-366*864e5);
+  const p1y = irenPts.filter(p=>p.x>=yearAgo);
+  lineChart('c-px',[{name:'IREN',color:SER.IREN,pts:p1y}],{area:true,yfmt:v=>'$'+nf(v,0),label:'IREN share price, 12 months',height:300});
+  if(last) el('c-px-asof').textContent='close '+dateS(last.x)+' · $'+nf(last.y,2);
+  // monthly multiples
+  const monthEnds=[]; let cur=null; irenPts.forEach(p=>{ const k=p.x.getFullYear()*12+p.x.getMonth(); if(cur&&cur.k!==k) monthEnds.push(cur.p); cur={k,p}; }); if(cur) monthEnds.push(cur.p);
+  const evs=[], mws=[], notes=[];
+  monthEnds.slice(-24).forEach(p=>{
+    const qS=latestQ(I.quarters,p.x,'shares_m'), qD=latestQ(I.quarters,p.x,'debt_m'), qC=latestQ(I.quarters,p.x,'cash_m'), qM=latestQ(I.quarters,p.x,'mw_op');
+    if(!qS||!qD||!qC) return;
+    const evm = p.y*qS.shares_m + qD.debt_m - qC.cash_m; // USD m
+    const l=ltmEbitda(I.quarters,p.x); if(l&&l>0) evs.push({x:p.x,y:evm/l});
+    if(qM&&qM.mw_op) mws.push({x:p.x,y:evm/qM.mw_op});
+  });
+  // append live point
+  if(ev&&ltmAdj&&ltmAdj>0&&last) evs.push({x:last.x,y:ev/1e6/ltmAdj});
+  if(ev&&I.mw_operating&&last) mws.push({x:last.x,y:ev/1e6/I.mw_operating});
+  lineChart('c-evebitda',[{name:'EV/adj. EBITDA',color:SER.IREN,pts:evs}],{height:150,yfmt:v=>nf(v,0)+'x',label:'EV to LTM adjusted EBITDA',right:50,empty:'Needs four quarters of adjusted EBITDA in the curated history.'});
+  lineChart('c-evmw',[{name:'EV/MW',color:SER.IREN,pts:mws}],{height:150,yfmt:v=>'$'+nf(v,1)+'m',label:'EV per operating MW',right:50,empty:'Needs quarterly MW history.'});
+  const yEE = raw(QS.IREN,'defaultKeyStatistics','enterpriseToEbitda');
+  el('c-mult-note').textContent = 'Reported-EBITDA basis (Yahoo, GAAP-style trailing): '+mult(yEE)+'. Adjusted EBITDA excludes stock comp, fair-value and one-off items as defined in IREN filings.';
+}
+
+// ---------- brokers ----------
+(function brokers(){
+  const B = I.brokers||{}; const cons = B.consensus||[]; const tr = (raw(QS.IREN,'recommendationTrend','trend')||[])[0] || (QS.IREN&&QS.IREN.recommendationTrend&&QS.IREN.recommendationTrend.trend&&QS.IREN.recommendationTrend.trend[0]);
+  const yMean=raw(QS.IREN,'financialData','targetMeanPrice'), yHi=raw(QS.IREN,'financialData','targetHighPrice'), yLo=raw(QS.IREN,'financialData','targetLowPrice'), yN=raw(QS.IREN,'financialData','numberOfAnalystOpinions'), yKey=raw(QS.IREN,'financialData','recommendationKey');
+  let html='';
+  if(tr){ const b=(tr.strongBuy||0)+(tr.buy||0), h=tr.hold||0, s=(tr.sell||0)+(tr.strongSell||0), n=b+h+s||1;
+    html+='<div class="eyebrow">Yahoo Finance, current month · '+n+' analysts</div><div class="rating-bar"><i style="width:'+(b/n*100)+'%;background:var(--good)"></i><i style="width:'+(h/n*100)+'%;background:var(--warn)"></i><i style="width:'+(s/n*100)+'%;background:var(--crit)"></i></div><div class="legend"><span><i class="sq" style="background:var(--good)"></i>Buy '+b+'</span><span><i class="sq" style="background:var(--warn)"></i>Hold '+h+'</span><span><i class="sq" style="background:var(--crit)"></i>Sell '+s+'</span></div>'; }
+  if(yMean){ const up=(yMean/px-1)*100; html+='<dl class="kv-list" style="margin-top:12px"><dt>Consensus</dt><dd style="text-transform:capitalize">'+esc(yKey||'–')+'</dd><dt>Mean target</dt><dd>$'+nf(yMean,2)+' <span class="'+cls(up)+'">('+pct(up,0)+')</span></dd><dt>Range</dt><dd>$'+nf(yLo,0)+' – $'+nf(yHi,0)+'</dd><dt>Analysts with targets</dt><dd>'+nf(yN)+'</dd></dl>';
+    // target range strip
+    const lo=Math.min(yLo,px), hi=Math.max(yHi,px); const P=v=>((v-lo)/(hi-lo)*100).toFixed(1);
+    html+='<div class="range" style="margin-top:12px"><div class="bar"><i style="left:'+P(px)+'%;background:var(--ink)" title="Spot"></i><i style="left:'+P(yMean)+'%" title="Mean target"></i></div><div class="lbl"><span>spot $'+nf(px,0)+'</span><span>mean $'+nf(yMean,0)+'</span></div></div>'; }
+  if(cons.length){ html+='<div class="eyebrow" style="margin-top:14px">Other aggregators</div><table class="tbl"><tr><th>Source</th><th class="n">N</th><th class="n">Buy/Hold/Sell</th><th class="n">Mean PT</th></tr>'+cons.map(c=>'<tr><td><a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.source)+'</a><div class="eyebrow" style="letter-spacing:0;text-transform:none">'+esc(c.rating||'')+' · '+esc(c.as_of||'')+'</div></td><td class="n">'+nf(c.n)+'</td><td class="n">'+nf(c.buy)+'/'+nf(c.hold)+'/'+nf(c.sell)+'</td><td class="n">$'+nf(c.mean,2)+'</td></tr>').join('')+'</table>'; }
+  el('b-consensus').innerHTML = html||'<div class="empty">No broker data available.</div>';
+  el('b-asof').textContent = px? 'vs spot $'+nf(px,2):'';
+  // changes: merge Yahoo history (live) with curated list, dedupe by date+firm
+  const seen=new Set(), rows=[];
+  (raw(QS.IREN,'upgradeDowngradeHistory','history')||(QS.IREN&&QS.IREN.upgradeDowngradeHistory&&QS.IREN.upgradeDowngradeHistory.history)||[]).forEach(h=>{ const d=new Date(h.epochGradeDate*1000).toISOString().slice(0,10); const k=d+'|'+h.firm.toLowerCase().replace(/[^a-z]/g,'').slice(0,6); if(seen.has(k)) return; seen.add(k); rows.push({date:d,broker:h.firm,action:({init:'Initiate',up:'Upgrade',down:'Downgrade',main:'Reiterate',reit:'Reiterate'})[h.action]||h.action, old_rating:h.fromGrade||'', new_rating:h.toGrade, old_pt:h.priorPriceTarget||null, new_pt:h.currentPriceTarget||null, pt_action:h.priceTargetAction, src:'Yahoo'}); });
+  (B.changes||[]).forEach(c=>{ const k=c.date+'|'+(c.broker||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,6); if(seen.has(k)) return; seen.add(k); rows.push(Object.assign({src:'curated'},c)); });
+  rows.sort((a,b)=>a.date<b.date?1:-1);
+  const top=rows.slice(0,18);
+  el('b-changes').innerHTML = top.length? '<table class="tbl"><tr><th>Date</th><th>Broker</th><th>Action</th><th>Rating</th><th class="n">Target</th><th class="n">vs spot</th></tr>'+top.map(r=>{ const ptTxt=(r.old_pt&&r.new_pt&&r.old_pt!==r.new_pt)? '$'+nf(r.old_pt,0)+' → $'+nf(r.new_pt,0) : (r.new_pt? '$'+nf(r.new_pt,0):'–'); const d=r.new_pt&&px? (r.new_pt/px-1)*100:null; const act=(r.pt_action==='Lowers'&&r.action==='Reiterate')?'PT cut':(r.pt_action==='Raises'&&r.action==='Reiterate')?'PT raise':r.action; return '<tr><td style="white-space:nowrap">'+esc(dateS(r.date))+'</td><td>'+(r.source?'<a href="'+esc(r.source)+'" target="_blank" rel="noopener">':'')+esc(r.broker)+(r.source?'</a>':'')+'</td><td>'+esc(act)+'</td><td>'+esc((r.old_rating&&r.old_rating!==r.new_rating? r.old_rating+' → ':'')+r.new_rating)+'</td><td class="n">'+ptTxt+'</td><td class="n '+cls(d)+'">'+pct(d,0)+'</td></tr>'; }).join('')+'</table>' : '<div class="empty">No rating changes recorded.</div>';
+})();
+
+// ---------- peers detail ----------
+// Monthly EV / LTM(field) series for a ticker from its quarterly history (shares_m, debt_m, cash_m, revenue_m, ebitda_m).
+function quartersFor(k){ if(k==='IREN') return (I.quarters||[]).map(q=>Object.assign({},q,{ebitda_m:q.adj_ebitda_m})); return ((C.peer_quarters||{})[k])||[]; }
+function multSeries(k, field, maxX){
+  const ch=CHART[k]; if(!ch||!ch.pts.length) return []; const qs=quartersFor(k); if(!qs.length) return [];
+  const yearAgo=new Date(Date.now()-366*864e5); const monthEnds=[]; let cur=null;
+  ch.pts.forEach(p=>{ const key=p.x.getFullYear()*12+p.x.getMonth(); if(cur&&cur.key!==key) monthEnds.push(cur.p); cur={key,p}; }); if(cur) monthEnds.push(cur.p);
+  const out=[];
+  monthEnds.filter(p=>p.x>=yearAgo).forEach(p=>{
+    const qS=latestQ(qs,p.x,'shares_m'), qD=latestQ(qs,p.x,'debt_m'), qC=latestQ(qs,p.x,'cash_m'); if(!qS||!qD||!qC) return;
+    const evm=p.y*qS.shares_m+qD.debt_m-qC.cash_m;
+    const last4=qs.filter(x=>x[field]!=null&&new Date(x.end)<=p.x).slice(-4); if(last4.length<4) return;
+    const ltm=last4.reduce((a,b)=>a+b[field],0); if(ltm<=0) return; const r=evm/ltm; if(r>maxX) return; out.push({x:p.x,y:r});
+  });
+  return out;
+}
+let relMode='price';
+function drawRel(){
+  const series=[]; const legend=[]; const yearAgo=new Date(Date.now()-366*864e5);
+  for(const k of ['IREN','NBIS','CRWV','ORCL','NVDA']){
+    let pts=[];
+    if(relMode==='price'){ const ch=CHART[k]; if(!ch) continue; const p=ch.pts.filter(p=>p.x>=yearAgo); if(p.length<2) continue; const b=p[0].y; pts=p.map(q=>({x:q.x,y:q.y/b*100})); }
+    else pts=multSeries(k, relMode==='ee'?'ebitda_m':'revenue_m', relMode==='ee'?250:400);
+    if(pts.length>=2){ series.push({name:k,color:SER[k],pts}); legend.push('<span><i style="background:'+SER[k]+'"></i>'+k+' '+NAMES[k]+'</span>'); }
+  }
+  const opts = relMode==='price'? {yfmt:v=>nf(v,0),refLine:100,endLabels:false,label:'Relative performance indexed to 100',height:300}
+    : {yfmt:v=>nf(v,0)+'x',endLabels:false,label:relMode==='ee'?'EV to trailing EBITDA':'EV to trailing revenue',height:300,right:60};
+  lineChart('c-rel',series,opts);
+  el('c-rel-legend').innerHTML=legend.join('');
+  el('c-rel-title').textContent = relMode==='price'? 'Relative performance, indexed to 100 twelve months ago' : (relMode==='ee'? 'EV / EBITDA, trailing twelve months, month-end' : 'EV / revenue, trailing twelve months, month-end');
+  el('c-rel-note').textContent = relMode==='price'? 'Daily closes from Yahoo Finance, dividends excluded. 100 = close twelve months ago.'
+    : (relMode==='ee'? 'EV at each month-end = close × latest reported shares + total debt − cash. EBITDA is company-adjusted where reported (IREN, Nebius, CoreWeave) and operating income plus D&A for Oracle and NVIDIA. Points are omitted where trailing EBITDA is negative or the multiple exceeds 250x, which removes Nebius before mid-2026.'
+      : 'EV at each month-end = close × latest reported shares + total debt − cash, divided by the sum of the last four reported quarters of revenue. Points above 400x are omitted.');
+  el('c-rel-tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected', b.dataset.m===relMode));
+}
+el('c-rel-tabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; relMode=b.dataset.m; drawRel(); });
+function drawPeers(){
+  drawRel();
+  const P=C.peers||{};
+  const rowsDef=[['Price','px',k=>'$'+nf(raw(QS[k],'price','regularMarketPrice'),2)],['Market cap','mc',k=>money(raw(QS[k],'price','marketCap'))],['Enterprise value','ev',k=>money(raw(QS[k],'defaultKeyStatistics','enterpriseValue'))],['EV / EBITDA (trailing)','ee',k=>mult(raw(QS[k],'defaultKeyStatistics','enterpriseToEbitda'))],['EV / revenue (trailing)','er',k=>mult(raw(QS[k],'defaultKeyStatistics','enterpriseToRevenue'))],['Forward P/E','fpe',k=>{const v=raw(QS[k],'defaultKeyStatistics','forwardPE'); return v&&v>0? nf(v,1)+'x':'n.m.';}],['Revenue growth (yoy)','rg',k=>{const v=raw(QS[k],'financialData','revenueGrowth'); return v==null?'–':pct(v*100,0);}],['Gross margin','gm',k=>{const v=raw(QS[k],'financialData','grossMargins'); return v==null?'–':nf(v*100,0)+'%';}],['Total debt','td',k=>money(raw(QS[k],'financialData','totalDebt'))],['Cash','tc',k=>money(raw(QS[k],'financialData','totalCash'))],['12-month return','r12',k=>{const ch=CHART[k]; if(!ch||ch.pts.length<2) return '–'; const yearAgo=new Date(Date.now()-366*864e5); const pts=ch.pts.filter(p=>p.x>=yearAgo); const p=raw(QS[k],'price','regularMarketPrice')||pts[pts.length-1].y; return pct((p/pts[0].y-1)*100,0);}]];
+  const ks=['IREN','NBIS','CRWV','ORCL','NVDA'];
+  el('peer-table').innerHTML='<table class="tbl"><tr><th></th>'+ks.map(k=>'<th class="n"><span class="sw" style="background:'+SER[k]+'"></span>'+k+'</th>').join('')+'</tr>'+rowsDef.map(r=>'<tr><td>'+r[0]+'</td>'+ks.map(k=>'<td class="n">'+esc(r[2](k))+'</td>').join('')+'</tr>').join('')+'</table><div class="note">Yahoo Finance fundamentals, re-pulled on each refresh. IREN EV/EBITDA here is on reported EBITDA; the adjusted basis is in the health strip.</div>';
+  const ops=(C.peer_ops||[]);
+  el('peer-ops').innerHTML = ops.length? '<table class="tbl"><tr><th>Company</th><th>Metric</th><th class="n">Value</th><th>As of</th><th>Source</th></tr>'+ops.map(o=>'<tr><td><span class="sw" style="background:'+(SER[o.ticker]||SER.OTHER)+'"></span>'+esc(NAMES[o.ticker]||o.ticker)+'</td><td>'+esc(o.metric)+'</td><td class="n">'+esc(o.value)+'</td><td style="white-space:nowrap">'+esc(o.as_of||'')+'</td><td class="src">'+(o.source?'<a href="'+esc(o.source)+'" target="_blank" rel="noopener">source</a>':'')+'</td></tr>').join('')+'</table>' : '<div class="empty">No operating metrics curated.</div>';
+}
+
+// ---------- capital markets ----------
+function drawCapital(){
+  const cs=I.capstack||[];
+  el('cs-asof').textContent = I.capstack_asof? 'as of '+dateS(I.capstack_asof):'';
+  const byType={}; cs.forEach(c=>{ byType[c.type]=(byType[c.type]||0)+(c.face_m||0); });
+  const segsOrder=['Convertible notes','Straight bonds','Private credit / term loans','Equipment / other debt','Other'];
+  const colorFor=t=>TYPE_COLORS[t]||(t==='Equipment / other debt'?'var(--s-nvda)':SER.OTHER);
+  const segs=Object.entries(byType).sort((a,b)=>segsOrder.indexOf(a[0])-segsOrder.indexOf(b[0])).map(([t,v])=>({name:t,value:v,color:colorFor(t)}));
+  const eq = mcap? [{name:'Equity (market cap)',value:mcap/1e6,color:'var(--s-other)'}]:[];
+  stacked('cs-bar',[{label:'Debt',segs},{label:'Equity',segs:eq}],{labelW:70,empty:'No capital stack curated yet.'});
+  el('cs-table').innerHTML = cs.length? '<table class="tbl"><tr><th>Instrument</th><th>Type</th><th class="n">Face, $m</th><th class="n">Coupon</th><th>Maturity</th><th class="n">Conv. price</th><th>Ranking</th><th></th></tr>'+cs.map(c=>'<tr><td><span class="sw" style="background:'+colorFor(c.type)+'"></span>'+esc(c.name)+'</td><td>'+esc(c.type)+'</td><td class="n">'+nf(c.face_m)+'</td><td class="n">'+esc(c.coupon||'–')+'</td><td style="white-space:nowrap">'+esc(c.maturity||'–')+'</td><td class="n">'+(c.conv_price?'$'+nf(c.conv_price,2):'–')+'</td><td>'+esc(c.ranking||'')+'</td><td class="src">'+(c.source?'<a href="'+esc(c.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'<tr><td colspan="2"><b>Total debt at face</b></td><td class="n"><b>'+nf(cs.reduce((a,b)=>a+(b.face_m||0),0))+'</b></td><td colspan="5"></td></tr></table>'+(I.capstack_note?'<div class="note">'+esc(I.capstack_note)+'</div>':'') : '<div class="empty">No capital stack curated yet.</div>';
+  // look-through debt by borrower
+  const lt=lookThrough();
+  el('lt-asof').textContent = I.debt_lookthrough_asof? 'drawn as of '+dateS(I.debt_lookthrough_asof)+' · commitments as announced' : '';
+  if(!lt){ el('lt-bar').innerHTML='<div class="empty">No look-through debt curated yet.</div>'; el('lt-tiles').innerHTML=''; el('lt-table').innerHTML=''; el('lt-legend').innerHTML=''; }
+  else {
+    const segD=LT_ORDER.filter(c=>lt.by[c]&&lt.by[c].drawn>0).map(c=>({name:c+', drawn',value:lt.by[c].drawn,color:LT_COLOR[c]}));
+    const segU=LT_ORDER.filter(c=>lt.by[c]&&lt.by[c].undrawn>0).map(c=>({name:c+', committed undrawn',value:lt.by[c].undrawn,color:LT_COLOR[c],hollow:true}));
+    stacked('lt-bar',[{label:'Reported (drawn)',segs:segD},{label:'Committed, undrawn',segs:segU},{label:'Fully drawn',segs:[...segD,...segU]}],{labelW:140});
+    const spv=LT_ORDER.filter(c=>c.startsWith('SPV')).reduce((a,c)=>a+((lt.by[c]||{}).drawn||0),0);
+    const hold=(lt.by['HoldCo recourse']||{}).drawn||0, guar=(lt.by['SPV, parent-guaranteed']||{}), nonrec=(lt.by['SPV, non-recourse']||{});
+    const ltTiles=[
+      {l:'Reported debt (consolidated)', v:moneyM(lt.drawn), d:'HoldCo '+moneyM(hold)+' · SPV '+moneyM(spv)+' · leases/other '+moneyM(lt.drawn-hold-spv)},
+      {l:'Committed, undrawn', v:moneyM(lt.undrawn), d:'non-recourse '+moneyM(nonrec.undrawn||0)+' · parent-guaranteed '+moneyM(guar.undrawn||0)},
+      {l:'Fully drawn look-through', v:moneyM(lt.drawn+lt.undrawn), d: cash!=null? 'less cash '+money(cash)+' = net '+money((lt.drawn+lt.undrawn)*1e6-cash) : ''},
+      {l:'Share non-recourse, fully drawn', v: pct(((nonrec.drawn||0)+(nonrec.undrawn||0))/(lt.drawn+lt.undrawn)*100,0,false), d:'of debt with no parent payment guarantee'},
+      {l:'Not quantified', v: lt.unquantified.length? lt.unquantified.length+' facilit'+(lt.unquantified.length>1?'ies':'y') : 'none', d: lt.unquantified.map(r=>r.entity.split(' (')[0]).join(', ')},
+    ];
+    el('lt-tiles').innerHTML = ltTiles.map(t=>'<div class="tile"><div class="l">'+esc(t.l)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d||'')+'</div></div>').join('');
+    el('lt-legend').innerHTML = LT_ORDER.filter(c=>lt.by[c]).map(c=>'<span><i style="background:'+LT_COLOR[c]+'"></i>'+esc(c)+'</span>').join('')+'<span><i style="background:transparent;border:1px dashed var(--muted)"></i>dashed = committed, undrawn</span>';
+    const order=r=>LT_ORDER.indexOf(ltCat(r));
+    const rows=lt.rows.slice().sort((a,b)=>order(a)-order(b)||((b.commitment_m||b.drawn_m||0)-(a.commitment_m||a.drawn_m||0)));
+    const und=r=> r.commitment_m!=null? Math.max(0,r.commitment_m-(r.drawn_m||0)) : null;
+    el('lt-table').innerHTML = '<table class="tbl"><tr><th>Borrower</th><th>Instrument</th><th>Recourse</th><th class="n">Commitment, $m</th><th class="n">Drawn, $m</th><th class="n">Undrawn, $m</th><th class="n">Rate</th><th>Maturity</th><th>Security</th><th></th></tr>'
+      +rows.map(r=>'<tr><td><span class="sw" style="background:'+LT_COLOR[ltCat(r)]+'"></span>'+esc(r.entity)+'</td><td>'+esc(r.instrument)+(r.note?'<div class="eyebrow" style="text-transform:none;letter-spacing:0;margin-top:2px">'+esc(r.note)+'</div>':'')+'</td><td>'+esc(r.recourse||ltCat(r))+'</td><td class="n">'+(r.commitment_m!=null?nf(r.commitment_m):'n/d')+'</td><td class="n">'+(r.drawn_m!=null?nf(r.drawn_m):'n/d')+'</td><td class="n">'+(und(r)!=null?nf(und(r)):'n/d')+'</td><td class="n">'+esc(r.rate||'–')+'</td><td style="white-space:nowrap">'+esc(r.maturity||'–')+'</td><td>'+esc(r.security||'')+'</td><td class="src">'+(r.source?'<a href="'+esc(r.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')
+      +'<tr><td colspan="3"><b>Total</b></td><td class="n"><b>'+nf(rows.reduce((a,r)=>a+(r.commitment_m!=null?r.commitment_m:(r.drawn_m||0)),0))+'</b></td><td class="n"><b>'+nf(lt.drawn)+'</b></td><td class="n"><b>'+nf(lt.undrawn)+'</b></td><td colspan="4"></td></tr></table>';
+    el('lt-note').textContent = I.debt_lookthrough_note||'';
+  }
+  // IREN raises YTD
+  const ri=(I.raises_ytd||[]); const byT={}; ri.forEach(r=>{ byT[r.type]=(byT[r.type]||0)+(r.size_m||0); });
+  hbars('r-iren-bar',TYPE_ORDER.filter(t=>byT[t]).map(t=>({label:t,value:byT[t],color:TYPE_COLORS[t]})),{labelW:170,empty:'No 2026 raises recorded for IREN.'});
+  el('r-iren-table').innerHTML = ri.length? '<table class="tbl"><tr><th>Date</th><th>Type</th><th class="n">$m</th><th>Terms</th><th></th></tr>'+ri.slice().sort((a,b)=>a.date<b.date?1:-1).map(r=>'<tr><td style="white-space:nowrap">'+esc(dateS(r.date))+'</td><td><span class="sw" style="background:'+(TYPE_COLORS[r.type]||SER.OTHER)+'"></span>'+esc(r.type)+'</td><td class="n">'+nf(r.size_m)+'</td><td>'+esc(r.terms||'')+'</td><td class="src">'+(r.source?'<a href="'+esc(r.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'</table>' : '';
+  const tot=ri.reduce((a,b)=>a+(b.size_m||0),0); el('r-iren-note').textContent = (ri.length? 'Total '+moneyM(tot)+' gross across '+ri.length+' transactions. ':'')+(I.raises_note||'');
+  // peer raises
+  const pr=(C.raises_peers_ytd||[]); const comps=['NBIS','CRWV','ORCL','NVDA'];
+  const rows=comps.map(k=>{ const m={}; pr.filter(r=>r.ticker===k).forEach(r=>{ m[r.type]=(m[r.type]||0)+(r.size_m||0); }); return {label:NAMES[k],segs:TYPE_ORDER.filter(t=>m[t]).map(t=>({name:t,value:m[t],color:TYPE_COLORS[t]}))}; });
+  const ir={}; ri.forEach(r=>{ ir[r.type]=(ir[r.type]||0)+(r.size_m||0); }); rows.unshift({label:'IREN',segs:TYPE_ORDER.filter(t=>ir[t]).map(t=>({name:t,value:ir[t],color:TYPE_COLORS[t]}))});
+  stacked('r-peer-bar',rows,{labelW:90,empty:'No peer raises recorded.'});
+  el('r-peer-legend').innerHTML=TYPE_ORDER.map(t=>'<span><i class="sq" style="background:'+TYPE_COLORS[t]+'"></i>'+t+'</span>').join('');
+  const tabs=el('r-peer-tabs'); let sel='ALL';
+  const renderPeerTable=()=>{ const list=pr.filter(r=>sel==='ALL'||r.ticker===sel).slice().sort((a,b)=>a.date<b.date?1:-1); el('r-peer-table').innerHTML = list.length? '<table class="tbl"><tr><th>Date</th><th>Company</th><th>Type</th><th class="n">$m</th><th>Terms</th><th>Use</th><th></th></tr>'+list.map(r=>'<tr><td style="white-space:nowrap">'+esc(dateS(r.date))+'</td><td style="white-space:nowrap"><span class="sw" style="background:'+SER[r.ticker]+'"></span>'+esc(NAMES[r.ticker]||r.ticker)+'</td><td>'+esc(r.type)+(r.subtype?' <span class="pill">'+esc(r.subtype)+'</span>':'')+'</td><td class="n">'+nf(r.size_m)+'</td><td>'+esc(r.terms||'')+'</td><td>'+esc(r.use||'')+'</td><td class="src">'+(r.source?'<a href="'+esc(r.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'</table>' : '<div class="empty">None recorded.</div>'; };
+  tabs.innerHTML=['ALL',...comps].map(k=>'<button role="tab" data-k="'+k+'" aria-selected="'+(k===sel)+'">'+(k==='ALL'?'All':NAMES[k])+'</button>').join('');
+  tabs.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; sel=b.dataset.k; tabs.querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x===b)); renderPeerTable(); });
+  renderPeerTable();
+  // last 24h
+  const r24=(C.raises_24h||[]); const cutoff=Date.now()-24*3600e3;
+  const fresh=r24.filter(r=>new Date(r.date)>=new Date(cutoff-12*3600e3));
+  el('r24-asof').textContent = META.generated_at? 'window to '+new Date(META.generated_at).toLocaleString('en-AU',{timeZone:'Australia/Sydney',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'';
+  el('r-24h').innerHTML = fresh.length? '<table class="tbl"><tr><th>Date</th><th>Issuer</th><th>Type</th><th class="n">$m</th><th>Terms</th><th></th></tr>'+fresh.map(r=>'<tr><td style="white-space:nowrap">'+esc(dateS(r.date))+'</td><td>'+esc(r.issuer)+'</td><td>'+esc(r.type)+'</td><td class="n">'+nf(r.size_m)+'</td><td>'+esc(r.terms||'')+'</td><td class="src">'+(r.source?'<a href="'+esc(r.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'</table>' : '<div class="empty">No capital raise by IREN, the four peers or the tracked sector names in the last 24 hours.'+(C.last_raise_before_window? ' Most recent before the window: '+esc(C.last_raise_before_window):'')+'</div>';
+  // pipeline
+  const pipe=[...(I.pipeline||[]).map(p=>Object.assign({issuer:'IREN'},p)),...(C.pipeline_peers||[])];
+  el('r-pipe').innerHTML = pipe.length? '<table class="tbl"><tr><th>Issuer</th><th>Item</th><th class="n">$m</th><th>Status</th><th>Date</th><th></th></tr>'+pipe.map(p=>'<tr><td style="white-space:nowrap">'+(SER[p.ticker]?'<span class="sw" style="background:'+SER[p.ticker]+'"></span>':'')+esc(p.issuer)+'</td><td>'+esc(p.item)+'</td><td class="n">'+(p.size_m!=null?nf(p.size_m):'–')+'</td><td><span class="pill '+esc(p.status)+'">'+esc(p.status)+'</span></td><td style="white-space:nowrap">'+esc(p.date||'')+'</td><td class="src">'+(p.source?'<a href="'+esc(p.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'</table>' : '<div class="empty">Nothing in the pipeline.</div>';
+  // sector tape
+  const st=(C.sector_tape||[]);
+  el('r-sector').innerHTML = st.length? '<table class="tbl"><tr><th>Date</th><th>Issuer / vehicle</th><th>Type</th><th class="n">$m</th><th>Terms</th><th></th></tr>'+st.slice().sort((a,b)=>(b.size_m||0)-(a.size_m||0)).map(r=>'<tr><td style="white-space:nowrap">'+esc(dateS(r.date))+'</td><td>'+esc(r.issuer)+'</td><td>'+esc(r.type)+'</td><td class="n">'+nf(r.size_m)+'</td><td>'+esc(r.terms||'')+'</td><td class="src">'+(r.source?'<a href="'+esc(r.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'</table>' : '<div class="empty">No sector tape curated.</div>';
+}
+
+// ---------- macro ----------
+function parseFred(txt){ if(!txt) return []; const out=[]; txt.split(/\r?\n/).slice(1).forEach(l=>{ const [d,v]=l.split(','); if(!d||v==null||v==='.'||v==='') return; const n=parseFloat(v); if(isNaN(n)) return; out.push({x:new Date(d),y:n}); }); return out; }
+function drawMacro(){
+  const btc=CHART.BTC, vix=CHART.VIX, tnx=CHART.TNX;
+  lineChart('c-btc',btc?[{name:'BTC',color:SER.IREN,pts:btc.pts}]:[],{area:true,yfmt:v=>'$'+nf(v/1000,0)+'k',label:'Bitcoin price',height:240,right:64});
+  if(btc&&btc.pts.length) el('c-btc-asof').textContent='$'+nf(btc.pts[btc.pts.length-1].y,0);
+  lineChart('c-vix',vix?[{name:'VIX',color:SER.IREN,pts:vix.pts}]:[],{area:true,yfmt:v=>nf(v,0),label:'VIX',height:240});
+  if(vix&&vix.pts.length) el('c-vix-asof').textContent=nf(vix.pts[vix.pts.length-1].y,2);
+  const dff=parseFred(D('d-fred-DFF')), hy=parseFred(D('d-fred-HYOAS'));
+  const tile=(l,pts,fmt,unit,note)=>{ if(!pts||!pts.length) return {l,v:'–',d:note||'FRED feed pending (blocked on the build network; retries on refresh)'}; const lastP=pts[pts.length-1]; const wk=pts.filter(p=>+p.x<=+lastP.x-7*864e5).pop(); const d=wk? lastP.y-wk.y:null; return {l,v:fmt(lastP.y)+unit,d:(d!=null? (d>=0?'+':'')+fmt(d)+unit+' vs 1 week':'')+' · '+dateShort(lastP.x),spark:sparkline(pts.slice(-130),SER.IREN,140,26)}; };
+  const tiles=[ tile('Fed funds effective',dff,v=>nf(v,2),'%'), tile('US 10-year yield',tnx?tnx.pts:[],v=>nf(v,2),'%'), tile('US HY OAS (CDX HY proxy)',hy,v=>nf(v*100,0),' bp'), tile('Bitcoin',btc?btc.pts:[],v=>'$'+nf(v,0),''), tile('VIX',vix?vix.pts:[],v=>nf(v,1),'') ];
+  el('macro-tiles').innerHTML=tiles.map(t=>'<div class="tile"><div class="l">'+esc(t.l)+'</div><div class="v">'+esc(t.v)+'</div>'+(t.spark||'')+'<div class="d">'+esc(t.d||'')+'</div></div>').join('');
+}
+
+// ---------- news ----------
+function parseRss(txt){ if(!txt) return []; try{ const doc=new DOMParser().parseFromString(txt,'text/xml'); return [...doc.querySelectorAll('item')].map(it=>{ const g=t=>{const n=it.querySelector(t); return n?n.textContent:'';}; let title=g('title'); let src=g('source'); const i=title.lastIndexOf(' - '); if(i>0&&!src){ src=title.slice(i+3); } if(i>0) title=title.slice(0,i); return {title:title.trim(),link:g('link'),date:new Date(g('pubDate')),src}; }).filter(x=>x.title); }catch(e){ return []; } }
+function renderNews(id, items, n){
+  const seen=new Set(); const out=[];
+  items.sort((a,b)=>b.date-a.date).forEach(it=>{ const k=it.title.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(' ').filter(w=>w.length>3).slice(0,6).join(' '); if(seen.has(k)) return; seen.add(k); out.push(it); });
+  el(id).innerHTML = out.length? out.slice(0,n).map(it=>'<li><a class="h" href="'+esc(it.link)+'" target="_blank" rel="noopener">'+esc(it.title)+'</a><span class="ago">'+ago(it.date)+'</span><span class="m">'+esc(it.src)+' · '+it.date.toLocaleString('en-AU',{timeZone:'Australia/Sydney',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false})+'</span></li>').join('') : '<li class="empty">Feed pending.</li>';
+}
+function drawNews(){
+  renderNews('news-iren',parseRss(D('d-news-IREN')),18);
+  renderNews('news-sector',parseRss(D('d-news-SECTOR')),18);
+  renderNews('news-macro',parseRss(D('d-news-MACRO')),8);
+  const sec=D('d-sec'); let rows=[];
+  if(sec){ try{ const doc=new DOMParser().parseFromString(sec,'text/xml'); rows=[...doc.getElementsByTagName('entry')].map(e=>{ const g=t=>{const n=e.getElementsByTagName(t)[0]; return n?n.textContent:'';}; const l=e.getElementsByTagName('link')[0]; return {title:g('title'),date:g('updated').slice(0,10),link:l?l.getAttribute('href'):'',form:g('category')||(e.getElementsByTagName('category')[0]||{}).getAttribute&&e.getElementsByTagName('category')[0].getAttribute('term')}; }); }catch(e){} }
+  el('sec-list').innerHTML = rows.length? '<table class="tbl"><tr><th>Filed</th><th>Form</th><th>Title</th></tr>'+rows.slice(0,12).map(r=>'<tr><td style="white-space:nowrap">'+esc(dateS(r.date))+'</td><td><span class="pill">'+esc(r.form||'')+'</span></td><td><a href="'+esc(r.link)+'" target="_blank" rel="noopener">'+esc(r.title)+'</a></td></tr>').join('')+'</table>' : '<div class="empty">EDGAR feed pending. The hourly job retries; this network blocked sec.gov at build time.</div>';
+  if(rows.length) el('sec-asof').textContent='latest '+dateS(rows[0].date);
+}
+
+// ---------- projects ----------
+// Timeline: rows [{label, sub, color, start, end, dashed, marks:[{x, kind:'actual'|'target', label}], endLabel, title}]
+function gantt(container, rows, opts={}){
+  const host=el(container); if(!host) return;
+  if(!rows.length){ host.innerHTML='<div class="empty">'+(opts.empty||'Nothing recorded.')+'</div>'; return; }
+  const W=Math.max(320,host.clientWidth||800), lw=opts.labelW||200, rw=opts.rightW||120, rh=36, top=24, H=top+rows.length*rh+18;
+  const x0=+opts.x0, x1=+opts.x1, X=t=>lw+((+t-x0)/(x1-x0))*(W-lw-rw);
+  let s='';
+  for(let y=new Date(x0).getFullYear(); y<=new Date(x1).getFullYear(); y++){
+    for(let q=0;q<4;q++){ const d=new Date(y,q*3,1); if(+d<x0||+d>x1) continue; const x=X(d).toFixed(1);
+      s+='<line x1="'+x+'" x2="'+x+'" y1="'+top+'" y2="'+(H-14)+'" stroke="'+(q?'var(--hair)':'var(--axis)')+'" stroke-width="1"/>';
+      s+='<text class="axis-t" x="'+(+x+4)+'" y="12"'+(q?' style="opacity:.75"':' style="fill:var(--ink)"')+'>'+(q? 'Q'+(q+1) : y)+'</text>'; } }
+  const now=new Date(); if(+now>x0&&+now<x1){ const x=X(now).toFixed(1); s+='<line x1="'+x+'" x2="'+x+'" y1="'+top+'" y2="'+(H-14)+'" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/><text class="axis-t" x="'+(+x+4)+'" y="'+(H-2)+'" style="fill:var(--ink)">today</text>'; }
+  rows.forEach((r,i)=>{ const y=top+i*rh+8;
+    s+='<text x="'+(lw-10)+'" y="'+(y+9)+'" text-anchor="end" style="fill:var(--ink);font-size:12px;font-weight:600">'+esc(r.label)+'</text>';
+    if(r.sub) s+='<text x="'+(lw-10)+'" y="'+(y+22)+'" text-anchor="end" class="axis-t">'+esc(r.sub)+'</text>';
+    if(r.start&&r.end&&+r.end>+r.start){ const xa=X(r.start), xb=X(r.end);
+      s+='<rect x="'+xa.toFixed(1)+'" y="'+(y+2)+'" width="'+(xb-xa).toFixed(1)+'" height="12" rx="2" fill="'+r.color+'"'+(r.dashed?' fill-opacity="0.22" stroke="'+r.color+'" stroke-width="1" stroke-dasharray="3 2"':' fill-opacity="0.85"')+'><title>'+esc(r.title||r.label)+'</title></rect>';
+      if(r.endLabel) s+='<text class="axis-t" x="'+(xb+10).toFixed(1)+'" y="'+(y+12)+'" style="fill:var(--ink-2)">'+esc(r.endLabel)+'</text>'; }
+    (r.marks||[]).forEach(m=>{ const x=X(m.x).toFixed(1);
+      if(m.kind==='actual') s+='<circle cx="'+x+'" cy="'+(y+8)+'" r="5" fill="'+r.color+'" stroke="var(--surface)" stroke-width="2"><title>'+esc(m.label)+'</title></circle>';
+      else s+='<path d="M'+x+' '+(y+2)+' l6 6 l-6 6 l-6 -6 z" fill="var(--surface)" stroke="'+r.color+'" stroke-width="2"><title>'+esc(m.label)+'</title></path>'; });
+  });
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px" role="img" aria-label="'+esc(opts.label||'timeline')+'">'+s+'</svg>';
+}
+const SITE_COLOR={childress:SER.IREN,sweetwater:SER.NBIS,bc:SER.CRWV,fleet:SER.NVDA,pipeline:SER.OTHER};
+const SITE_NAME={childress:'Childress, TX',sweetwater:'Sweetwater, TX',bc:'British Columbia',fleet:'Company-wide targets',pipeline:'Pipeline sites'};
+function drawProjects(){
+  const P=(I.projects||[]);
+  el('pj-asof').textContent = I.projects_asof? 'as of '+dateS(I.projects_asof):'';
+  const withMs=P.filter(p=>(p.milestones||[]).length);
+  const rows=withMs.map(p=>{
+    const ms=p.milestones.map(m=>({x:new Date(m.date),kind:m.kind==='actual'?'actual':'target',label:(m.kind==='actual'?'':'Target · ')+m.label+' · '+(m.shown||dateS(m.date))}));
+    const xs=ms.map(m=>+m.x); const start=p.announced? new Date(p.announced) : new Date(Math.min(...xs)); const end=new Date(Math.max(...xs,+start));
+    const done=ms.every(m=>m.kind==='actual'); const lastT=p.milestones.filter(m=>m.kind!=='actual').slice(-1)[0];
+    return {label:p.name, sub:(p.capacity||'').length>38? (p.capacity||'').slice(0,36)+'…' : (p.capacity||''), color:SITE_COLOR[p.site_key]||SER.OTHER, start, end, dashed:!done, marks:ms, endLabel: lastT? (lastT.shown||dateS(lastT.date)) : (done? 'complete':''), title:p.name+(p.status?' · '+p.status:'')};
+  });
+  gantt('pj-gantt',rows,{x0:new Date(2025,6,1),x1:new Date(2028,11,31),labelW:210,label:'IREN project timeline',empty:'No project milestones curated yet.'});
+  const sites=[...new Set(withMs.map(p=>p.site_key))];
+  el('pj-legend').innerHTML = sites.map(k=>'<span><i class="sq" style="background:'+(SITE_COLOR[k]||SER.OTHER)+'"></i>'+esc(SITE_NAME[k]||k)+'</span>').join('')+'<span><i class="sq" style="border-radius:50%;background:var(--ink-2)"></i>completed</span><span><i class="sq" style="background:transparent;border:2px solid var(--ink-2);transform:rotate(45deg);width:7px;height:7px"></i>target</span><span><i style="background:transparent;border:1px dashed var(--muted);height:8px"></i>bar: first public milestone to latest target</span>';
+  el('pj-note').textContent = I.projects_note||'';
+  el('pj-table').innerHTML = P.length? '<table class="tbl"><tr><th>Project</th><th>Site</th><th>Capacity</th><th>Customer / use</th><th>Status</th><th>Milestones</th><th></th></tr>'
+    +P.map(p=>'<tr><td><span class="sw" style="background:'+(SITE_COLOR[p.site_key]||SER.OTHER)+'"></span><b>'+esc(p.name)+'</b></td><td>'+esc(p.site||SITE_NAME[p.site_key]||'')+'</td><td style="white-space:nowrap">'+esc(p.capacity||'–')+'</td><td>'+esc(p.customer||'–')+'</td><td>'+esc(p.status||'')+'</td><td>'+(p.milestones||[]).map(m=>'<div><span class="pill '+(m.kind==='actual'?'announced':'filed')+'">'+(m.kind==='actual'?'done':'target')+'</span> '+esc(m.label)+' · '+esc(m.shown||dateS(m.date))+'</div>').join('')+(p.milestones&&p.milestones.length?'':'<span class="pill">no public date</span>')+'</td><td class="src">'+(p.source?'<a href="'+esc(p.source)+'" target="_blank" rel="noopener">src</a>':'')+'</td></tr>').join('')+'</table>' : '<div class="empty">No projects curated yet.</div>';
+}
+
+// ---------- boot + resize ----------
+function drawAll(){ drawIren(); drawPeers(); drawCapital(); drawProjects(); drawMacro(); }
+drawAll(); drawNews();
+let rt; window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(drawAll,150); });
+})();
+</script>
+
+<script type="text/x-python" id="refresh-py">
+# IREN Markets Desk refresh script. Usage: python3 refresh.py in.html out.html
+# Re-fetches every data block that carries a data-url, keeps the old payload if a fetch fails,
+# and stamps d-meta with the run time and per-block status. Requires Python 3.8+, stdlib only.
+import re, json, sys, html, time, datetime, urllib.request, urllib.parse, http.cookiejar
+
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+SEC_UA = "IREN markets dashboard research contact@iren.com"
+END = "</" + "script>"
+
+def get(url, opener=None, ua=UA, timeout=40):
+    req = urllib.request.Request(url, headers={"User-Agent": ua, "Accept": "*/*"})
+    op = opener or urllib.request.build_opener()
+    with op.open(req, timeout=timeout) as r:
+        return r.read().decode("utf-8", "replace")
+
+def yahoo_session():
+    for attempt in range(4):
+        try:
+            cj = http.cookiejar.CookieJar()
+            op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+            try:
+                get("https://fc.yahoo.com", op, timeout=20)
+            except Exception:
+                pass
+            crumb = get("https://query2.finance.yahoo.com/v1/test/getcrumb", op, timeout=20).strip()
+            if crumb and len(crumb) < 30 and "{" not in crumb and " " not in crumb:
+                return op, crumb
+        except Exception:
+            pass
+        time.sleep(3 + attempt * 4)
+    return None, None
+
+def escape_payload(s):
+    return s.replace("</", "<\\/")
+
+def main(src, dst):
+    text = open(src, encoding="utf-8").read()
+    status = {}
+    yop = ycrumb = None
+    need_yahoo = 'data-auth="yahoo"' in text
+    if need_yahoo:
+        yop, ycrumb = yahoo_session()
+    # Anchored to line start so the same literal inside this embedded script is never matched.
+    block = re.compile(r'^(<script type="application/json" id="(d-[\w-]+)"([^>]*)>)(.*?)(' + re.escape(END) + ')', re.S | re.M)
+
+    def repl(m):
+        open_tag, bid, attrs, old, close = m.groups()
+        murl = re.search(r'data-url="([^"]+)"', attrs)
+        if not murl:
+            return m.group(0)
+        url = html.unescape(murl.group(1))
+        kind = (re.search(r'data-kind="(\w+)"', attrs) or [None, "json"])[1]
+        auth = (re.search(r'data-auth="(\w+)"', attrs) or [None, ""])[1]
+        ua = SEC_UA if 'data-ua="sec"' in attrs else UA
+        payload = None
+        err = None
+        for attempt in range(3):
+            try:
+                if auth == "yahoo":
+                    if not ycrumb:
+                        raise RuntimeError("no yahoo crumb")
+                    body = get(url.replace("{crumb}", urllib.parse.quote(ycrumb)), yop, ua)
+                else:
+                    body = get(url, None, ua)
+                if kind == "json":
+                    obj = json.loads(body)
+                    payload = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+                else:
+                    if len(body) < 50:
+                        raise RuntimeError("short body")
+                    if "news.google.com" in url:
+                        body = re.sub(r"<description>.*?</description>", "", body, flags=re.S)
+                    payload = json.dumps(body, ensure_ascii=False)
+                break
+            except Exception as e:
+                err = str(e)[:120]
+                time.sleep(2 + attempt * 3)
+        now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        attrs2 = re.sub(r'\s*data-fetched="[^"]*"', "", attrs)
+        if payload is None:
+            status[bid] = "error: " + (err or "unknown") + (" (kept previous)" if old.strip() not in ("", "null") else "")
+            return m.group(0)
+        status[bid] = "ok"
+        return '<script type="application/json" id="%s"%s data-fetched="%s">%s%s' % (bid, attrs2, now, escape_payload(payload), close)
+
+    text = block.sub(repl, text)
+    meta = {"generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "status": status}
+    text = re.sub(r'^(<script type="application/json" id="d-meta">)(.*?)(' + re.escape(END) + ')', lambda m: m.group(1) + escape_payload(json.dumps(meta)) + m.group(3), text, count=1, flags=re.S | re.M)
+    open(dst, "w", encoding="utf-8").write(text)
+    ok = sum(1 for v in status.values() if v == "ok")
+    print("refreshed %d/%d blocks" % (ok, len(status)))
+    for k, v in status.items():
+        if v != "ok":
+            print("  ", k, v)
+
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else sys.argv[1])
+</script>
