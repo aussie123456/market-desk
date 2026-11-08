@@ -2,7 +2,7 @@
 
 Single-file markets dashboard for IREN and peers (Nebius, CoreWeave, Oracle, NVIDIA), built and published by GitHub Actions with no dependency on Claude.
 
-- Live page: `https://<owner>.github.io/<repo>/` (shown on the repo's Settings > Pages tab once enabled)
+- Live page: https://aussie123456.github.io/market-desk/ (repo https://github.com/aussie123456/market-desk)
 - Manual refresh: Actions tab > **Refresh dashboard** > **Run workflow**. The page's own **Refresh data** button opens that screen. Allow 3 to 5 minutes.
 - Scheduled refresh: daily at 22:00 UTC (9:00am Sydney during daylight saving). See the cron note in `.github/workflows/refresh.yml` for the April DST change.
 
